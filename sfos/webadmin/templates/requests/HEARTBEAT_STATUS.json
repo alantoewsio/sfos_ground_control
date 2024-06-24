@@ -1,0 +1,12 @@
+{
+    "req_mode": 1322,
+    "req_object": null,
+    "web_path": "{PATH_CONTROLLER}",
+    "web_method": "post",
+    "web_headers": {
+        "Referer": "{LOGIN_URL}",
+        "X-Requested-With": "XMLHttpRequest"
+    },
+    "urlencode": false,
+    "separator": "&"
+}

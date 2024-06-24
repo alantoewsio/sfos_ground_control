@@ -1,0 +1,7 @@
+[
+    {
+        "command": "get_ssmk_state", 
+        "subtype": None,
+        "data":None
+    }
+]

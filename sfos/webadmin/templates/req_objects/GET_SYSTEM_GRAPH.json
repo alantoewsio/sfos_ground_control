@@ -1,0 +1,49 @@
+{
+    "req_mode": 557,
+    "req_objects": {
+        "cpu": {
+            "graph": [
+                "cpu"
+            ],
+            "time": [
+                "hourly"
+            ],
+            "filter": [
+                "NA"
+            ]
+        },
+        "policyconn": {
+            "graph": [
+                "policyconn"
+            ],
+            "time": [
+                "hourly"
+            ],
+            "filter": [
+                "NA"
+            ]
+        },
+        "zone_total": {
+            "graph": [
+                "zone_total"
+            ],
+            "time": [
+                "hourly"
+            ],
+            "filter": [
+                "NA"
+            ]
+        },
+        "memory": {
+            "graph": [
+                "memory"
+            ],
+            "time": [
+                "hourly"
+            ],
+            "filter": [
+                "NA"
+            ]
+        }
+    }
+}

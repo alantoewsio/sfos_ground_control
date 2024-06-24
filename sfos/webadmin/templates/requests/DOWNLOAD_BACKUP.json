@@ -1,0 +1,21 @@
+[
+    {
+        "req_mode": 466,
+        "web_path": "{PATH_CONTROLLER}",
+        "web_method": "post",
+        "web_headers": {
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "Referer": "{INDEX_URL}"
+        }
+    },
+    {
+        "req_mode": 466,
+        "web_path": "{PATH_CONTROLLER}",
+        "web_method": "get",
+        "download": "True",
+        "web_headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Referer": "{INDEX_URL}"
+        }
+    }
+]

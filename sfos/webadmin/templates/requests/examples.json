@@ -1,0 +1,38 @@
+mode: 182
+json: {
+    "mailloginterval": "-1",
+    "sendtype": "7",
+    "prefix": "admin",
+    "encryptpassword": "Sophos=11111"
+}
+__RequestType: ajax
+
+
+mode: 182
+json: {
+    "mailloginterval": "2",
+    "sendtype": "7",
+    "prefix": "admin",
+    "weekday": "0",
+    "hour": "00",
+    "minutes": "00"
+}
+__RequestType: ajax
+
+
+json: {
+    "passwordoption": "on",
+    "custompassword": "Sophos=12345"
+}
+json: {
+    "passwordoption": "on"
+}
+POST mode=466&json=%7B%22passwordoption%22%3A%22on%22%7D&__RequestType=ajax
+then 
+GET
+mode=466
+form data:
+csrf=qu99rf9otiofcmnvff9ikah1ht
+
+response header:
+Content-Disposition: attachment; filename=Backup_X23001RQQV66831_27Oct2022_12.15.08

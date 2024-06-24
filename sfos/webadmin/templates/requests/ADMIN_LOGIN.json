@@ -1,0 +1,39 @@
+[
+    {
+        "req_mode": 151,
+        "req_operation": 0,
+        "web_path": "{PATH_CONTROLLER}",
+        "web_method": "post",
+        "web_headers": {
+            "Referer": "{LOGIN_URL}"
+        },
+        "urlencode": true,
+        "arguments": [
+            {
+                "name": "username",
+                "type": "str",
+                "required": "true"
+            },
+            {
+                "name": "password",
+                "type": "str",
+                "required": "true"
+            },
+            {
+                "name": "languageid",
+                "type": "int",
+                "default": "1"
+            }
+        ]
+    },
+    {
+        "req_mode": 0,
+        "req_operation": 0,
+        "web_path": "{PATH_INDEX_JSP}",
+        "web_method": "get",
+        "web_headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Referer": "{LOGIN_URL}"
+        }
+    }
+]

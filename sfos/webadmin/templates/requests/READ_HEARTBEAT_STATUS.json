@@ -1,0 +1,10 @@
+{
+    "opcode_mode": 300,
+    "opcode_operation": 1322,
+    "web_path": "{PATH_CONTROLLER}",
+    "web_method": "get",
+    "web_headers": {  
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Referer": "{INDEX_URL}"
+    }
+}

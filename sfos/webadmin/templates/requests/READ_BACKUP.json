@@ -1,0 +1,25 @@
+{
+    "req_mode": 300,
+    "req_operation": 466,
+    "web_path": "{PATH_CONTROLLER}",
+    "web_method": "get",
+    "web_headers": {
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Referer": "{INDEX_URL}"
+    },
+    "returns": {
+        "date": "str",
+        "day": "int",
+        "encryptpassword": "int",
+        "ftpserver": "str",
+        "ftpusername": "str",
+        "lastBackupTakenTime": "int",
+        "mailid": "str",
+        "mailinterval": "int",
+        "path": "str",
+        "prefix": "str",
+        "sendtype": "int",
+        "status": "str",
+        "time": "str"
+    }
+}

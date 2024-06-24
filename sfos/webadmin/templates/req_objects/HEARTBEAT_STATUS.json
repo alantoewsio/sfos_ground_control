@@ -1,0 +1,37 @@
+{
+    "req_mode": 1322,
+    "req_objects": {
+        "atpStatus": {
+            "atpStatus": 1
+        },
+        "redStatus": {
+            "redStatus": 1
+        },
+        "liveUsers": {
+            "liveUsers": 1
+        },
+        "remoteUsers": {
+            "remoteUsers": 1
+        },
+        "policyCount": {
+            "policyCount": 1,
+            "policyMetaCount": 1
+        },
+        "hbStatus": {
+            "hbStatus": 1
+        },
+        "eacStatus": {
+            "eacAllAppsCount": 1,
+            "eacNewAppsCount": 1,
+            "eacCategorizedAppsCount": 1,
+            "hbStatus": 1,
+            "eacStatus": 1
+        },
+        "vpnInfo": {
+            "vpnInfo": 1
+        },
+        "networkInfo": {
+            "networkInfo": 1
+        }
+    }
+}

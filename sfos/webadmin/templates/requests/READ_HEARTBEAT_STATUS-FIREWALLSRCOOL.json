@@ -1,0 +1,12 @@
+{
+    "req_mode": 300,
+    "req_operation": 1322,
+    "web_path": "{PATH_CONTROLLER}",
+    "web_method": "get",
+    "web_headers": {
+        "Accept": "text/plain, */*; q=0.01",
+        "Referer": "{INDEX_URL}",
+        "X-Requested-With": "XMLHttpRequest"
+    },
+    "arguments": null
+}

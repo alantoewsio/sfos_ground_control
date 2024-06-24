@@ -1,0 +1,86 @@
+""" SFOS Ground Control
+Copyright 2024 Sophos Ltd.  All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+file except in compliance with the License.
+You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software distributed under
+the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing
+permissions and limitations under the License.
+"""
+
+import pytest
+from sfos.base import ServiceAddress as _sa, SfosMode as _req_mode
+from sfos.webadmin.connector import Connector as _fw
+
+from sfos.webadmin.methods import (
+    _prepare_req_headers as _prep_headers,
+    make_sfos_request as _make_req,
+    load_definition,
+)
+
+
+@pytest.fixture
+def address() -> _sa:
+    return _sa("testhost")
+
+
+@pytest.fixture
+def token_headers(address: _sa) -> dict:
+    login, index = load_definition(_req_mode.ADMIN_LOGIN)
+    return _prep_headers(index.web_headers, address)
+
+
+@pytest.fixture
+def auth_headers(address: _sa) -> dict:
+    req, index = load_definition(_req_mode.ADMIN_LOGIN)
+    return _prep_headers(req.web_headers, address)
+
+
+def test_request_login(address: _sa, auth_headers: dict) -> None:
+    t_login, t_index = load_definition(_req_mode.ADMIN_LOGIN)
+    t_content = '{"username":"admin","password":"Secret+Pass!","languageid":"1"}'
+    t_gen = _make_req(t_login, address, t_content)
+
+    e_url = "https://testhost:4444/webconsole/Controller"
+    e_headers = auth_headers
+    e_body = (
+        "mode=151&"
+        "json=%7B%22username%22%3A%22admin%22%2C"
+        "%22password%22%3A%22Secret%2BPass%21%22%2C"
+        "%22languageid%22%3A%221%22%7D&"
+        "__RequestType=ajax"
+    )
+
+    assert t_gen.url == e_url
+    assert t_gen.headers == e_headers
+    assert t_gen.body.startswith(e_body)
+
+
+def test_login_requests(address: _sa, auth_headers: dict, token_headers: dict) -> None:
+    myfw = _fw(
+        address=address,
+        credentials={"username": "admin", "password": "Secret+Pass!"},
+    )
+    t_login, t_index = myfw._get_login_req_cmds()
+
+    e_url_login = "https://testhost:4444/webconsole/Controller"
+    e_headers_login = auth_headers
+    e_body_login = (
+        "mode=151&"
+        "json=%7B%22username%22%3A%22admin%22%2C"
+        "%22password%22%3A%22Secret%2BPass%21%22%2C"
+        "%22languageid%22%3A%221%22%7D&"
+        "__RequestType=ajax"
+    )
+
+    e_url_index = "https://testhost:4444/webconsole/webpages/index.jsp"
+    e_body_index = None
+
+    assert t_login.url == e_url_login
+    assert t_login.headers == e_headers_login
+    assert t_login.body.startswith(e_body_login)
+
+    assert t_index.url == e_url_index
+    assert t_index.body == e_body_index

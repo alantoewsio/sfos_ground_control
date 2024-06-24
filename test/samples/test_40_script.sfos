@@ -1,0 +1,3 @@
+[
+    {"command":"HEARTBEAT_STATUS", "request_object":"hbStatus"}
+]

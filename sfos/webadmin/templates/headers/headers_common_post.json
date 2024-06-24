@@ -1,0 +1,5 @@
+{    
+    "Accept": "text/plain, */*; q=0.01",
+    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "Origin": "{ROOT_URL}"
+}

@@ -1,0 +1,8 @@
+{
+    "req_mode": 557,
+    "web_path": "{PATH_CONTROLLER}",
+    "web_method": "post",
+    "web_headers": {
+        "Referer": "{LOGIN_URL}"
+    }
+}

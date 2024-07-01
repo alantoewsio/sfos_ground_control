@@ -1,0 +1,15 @@
+{
+  "columns": null,
+  "from_table": "fwinfo_latest",
+  "distinct": false,
+  "where": [
+    {
+      "column": "version",
+      "operator": "is",
+      "criteria": null
+    }
+  ],
+  "order": [],
+  "group": [],
+  "limit": null
+}

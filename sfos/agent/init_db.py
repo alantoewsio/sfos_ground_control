@@ -1,13 +1,12 @@
 """ SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
-file except in compliance with the License.
-You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing
-permissions and limitations under the License.
+file except in compliance with the License.You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed
+to in writing, software distributed under the License is distributed on an "AS IS"
+BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+the License for the specific language governing permissions and limitations under the
+License.
 """
 
 from sfos.base import GroundControlDB as _db
@@ -23,7 +22,6 @@ fwinfo_table = [
     "serial_number",
     "companyName",
     "username",
-    "record_date",
     "verify_tls",
     "message",
 ]
@@ -50,6 +48,25 @@ def init_db(filename: str | None = None) -> _db:
 
     if db.create_db():
         print(f"New GroundControl database created: '{db.filename}'")
+
+    if "inventory" not in db.list_tables():
+        cols = {
+            "address": "TEXT UNIQUE",
+            "Model": "TEXT",
+            "displayVersion": "TEXT",
+            "version": "TEXT",
+            "serial_number": "TEXT",
+            "companyName": "TEXT",
+            "username": "TEXT",
+            "verify_tls": "TEXT",
+            "message": "TEXT",
+            "last_result": "TEXT DEFAULT 'none'",
+            "reply_ms": "INTEGER DEFAULT -1",
+            "added": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+            "updated": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+            "last_seen": "TIMESTAMP DEFAULT NULL",
+        }
+        db.create_table("inventory", **cols)
 
     if "fwinfo" not in db.list_tables():
         # print("creating fwinfo table")

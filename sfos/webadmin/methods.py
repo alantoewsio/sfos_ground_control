@@ -72,7 +72,7 @@ def load_request_object_data(
 
 
 def load_definition(
-    name: str | _req_oper,
+    name: str | _req_mode,
     path: str | list[str] = REQ_TEMPLATE_PATH,
     header_path: str | list[str] = HEADER_PATH,
 ) -> _srdef | list[_srdef]:

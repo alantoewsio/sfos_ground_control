@@ -1,15 +1,14 @@
 """ SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
-file except in compliance with the License.
-You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing
-permissions and limitations under the License.
+file except in compliance with the License.You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed
+to in writing, software distributed under the License is distributed on an "AS IS"
+BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+the License for the specific language governing permissions and limitations under the
+License.
 """
-import argparse
+import argparse as _args
 import json
 import os
 import yaml
@@ -30,7 +29,7 @@ from sfos.webadmin import Connector
 def db_save_subs(db: _db | None = None, all_info: _fwi | None = None) -> None:
     if not (db or all_info):
         return
-    subs = all_info.license_dict
+    subs = all_info.subscription_list
     for sub in subs:
         db.insert_into(
             "fwsubs",
@@ -116,7 +115,7 @@ def load_file_str(filename: str) -> str:
         raise Exception from e
 
 
-def read_cred_args(args: argparse.Namespace) -> dict:
+def read_cred_args(args:  _args.Namespace) -> dict:
     result = {}
     result["fw_username"] = (
         args.username if args.username else os.environ.get("FW_USERNAME", "admin")
@@ -124,7 +123,6 @@ def read_cred_args(args: argparse.Namespace) -> dict:
     result["fw_password"] = (
         args.password if args.password else os.environ.get("FW_PASSWORD", None)
     )
-    result["firewalls"] = []
     if args.use_vault:
         result["fw_password"] = _get_credential(
             mount_point=os.environ["VAULT_MOUNT_POINT"],
@@ -165,8 +163,8 @@ def _read_yaml_file(filename: str) -> dict:
         print(f"Error reading {filename} - {e}")
 
 
-def _format_inventory(
-    yaml_dict: dict | None, args: argparse.Namespace, creds: dict,
+def _parse_inv(
+    yaml_dict: list | None, args:  _args.Namespace, creds: dict,
 ) -> list:
     if yaml_dict is None:
         return []
@@ -186,26 +184,42 @@ def _format_inventory(
     return yaml_dict
 
 
-def read_firewall_inventory(args: argparse.Namespace, creds: dict) -> list[Connector]:
-    inventory = []
-    yaml_dict = _read_yaml_file(args.inventory)
-    inventory = _format_inventory(yaml_dict, args, creds)
+def _combine_lists(source: list, dest: list) -> list:
+    for src_item in source:
+        if src_item not in dest:
+            dest.append(src_item)
+    return dest
 
-    if not inventory and args.hostname:
+
+def read_firewall_inventory(args:  _args.Namespace, creds: dict) -> list[Connector]:
+    fw_inventory = []
+
+    if args.hostname:
         # use a single firewall for this run
-        inventory.append(
+        print("using Hostname")
+        fw_inventory.append(
             {
                 "hostname": args.hostname,
                 "port": args.port,
-                "verify_tls": args.verify_tls,
+                "verify_tls": str(args.verify_tls).lower == "true",
                 "username": creds["fw_username"],
                 "password": creds["fw_password"],
             },
         )
-    if not inventory:
+    elif args.inventory:
+        fw_inventory = []
+        for inv in args.inventory:
+            yaml_list = _read_yaml_file(inv)
+            fw_inventory = _combine_lists(
+                _parse_inv(yaml_list, args, creds),
+                fw_inventory,
+            )
+    else:
+        print("no host found:", args.inventory, args.hostname)
+    if not fw_inventory:
         raise Exception("A hostname or firewall inventory file is required")
 
-    firewalls = _convert_inventory_to_connectors(inventory)
+    firewalls = _convert_inventory_to_connectors(fw_inventory)
     return firewalls
 
 

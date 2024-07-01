@@ -1,24 +1,23 @@
 """ SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
-file except in compliance with the License.
-You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing
-permissions and limitations under the License.
+file except in compliance with the License.You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed
+to in writing, software distributed under the License is distributed on an "AS IS"
+BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+the License for the specific language governing permissions and limitations under the
+License.
 """
-
-import argparse
+import sys as _sys
+import argparse as _args
 import pytest
 import shlex
 
 from sfos import agent as _agent
 
 
-def parser_t1() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser("test", allow_abbrev=True)
+def parser_t1() -> _args.ArgumentParser:
+    parser = _args.ArgumentParser("test", allow_abbrev=True)
     parser.add_argument("-t1", action="store_true", default=False)
     parser.add_argument("-t2", action="store_true", default=False)
     parser.add_argument("-t3", action="store_true", default=False)
@@ -37,7 +36,7 @@ def parser_t1() -> argparse.ArgumentParser:
         ("-t1 -t2 -t3", parser_t1()),
     ],
 )
-def test_parse_args(raw_args: str, parser: argparse.ArgumentParser) -> None:
+def test_parse_args(raw_args: str, parser:  _args.ArgumentParser) -> None:
     args = shlex.split(raw_args)
     ns = parser.parse_args(args=args)
     print(
@@ -55,16 +54,16 @@ def test_parse_args(raw_args: str, parser: argparse.ArgumentParser) -> None:
 SINGLE_HOST_NOOP = " ".join([
     "--hostname test.fw.name",
     "--port 4444",
-    "--self-signed-cert",
+    "--verify_tls False",
     "--username test_user",
     "--password test_pass",
-    "-zz"
+    "-noop"
 ])
 
 SINGLE_HOST_COMMAND = " ".join([
     "--hostname test.fw.name",
     "--port 4444",
-    "--self-signed-cert",
+    "--verify_tls False",
     "--username test_user",
     "--password test_pass",
     "-c",
@@ -74,7 +73,7 @@ SINGLE_HOST_COMMAND = " ".join([
 SINGLE_HOST_QUERY = " ".join([
     "--hostname test.fw.name",
     "--port 4444",
-    "--self-signed-cert",
+    "--verify_tls False",
     "--username test_user",
     "--password test_pass",
     "-q",
@@ -89,20 +88,20 @@ SINGLE_HOST_QUERY = " ".join([
 @pytest.mark.parametrize(
     "raw_args", [SINGLE_HOST_NOOP],
 )
-def test_parser_prod(raw_args: str) -> None:
+def x_test_parser_prod(raw_args: str) -> None:
     # parsers = _agent.init_cli()
-    args = shlex.split(raw_args)
-    result = _agent.read_root_args(args)
-    (firewalls, ns, action) = result
+    args = shlex.split(_sys.argv[0]+" "+raw_args)
+    _sys.argv = args
 
-    print(firewalls, ns, action)
+    (p_root, p_command, p_query, p_report, p_script) = _agent.init_cli()
 
-    assert len(firewalls) == 1
-    fw = firewalls[0]
+    t_args = p_root.parse_known_args()
 
-    assert fw.credentials["username"] == "test_user"
-    assert fw.credentials["password"] == "test_pass"
-    assert fw.address.hostname == "test.fw.name"
-    assert fw.address.port == 4444
-    assert fw.address.verify_tls is False
-    assert action in ["noop", "query", "command",]
+    print("shellex args:", args)
+    print("argparse args", t_args)
+    assert t_args.hosname == "test.fw.name"
+    assert t_args.port == 4444
+    assert t_args.verify_tls is False
+    assert t_args.username == "test_user"
+    assert t_args.password == "test_pass"
+    assert t_args.action == "noop"

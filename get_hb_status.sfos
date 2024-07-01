@@ -1,3 +1,11 @@
 [
-    {"command":"HEARTBEAT_STATUS", "request_object":"hbStatus"}
+    {"command":"HEARTBEAT_STATUS", "request_object":"atpStatus"},
+    {"command":"HEARTBEAT_STATUS", "request_object":"redStatus"},
+    {"command":"HEARTBEAT_STATUS", "request_object":"liveUsers"},
+    {"command":"HEARTBEAT_STATUS", "request_object":"remoteUsers"},
+    {"command":"HEARTBEAT_STATUS", "request_object":"policyCount"},
+    {"command":"HEARTBEAT_STATUS", "request_object":"hbStatus"},
+    {"command":"HEARTBEAT_STATUS", "request_object":"eacStatus"},
+    {"command":"HEARTBEAT_STATUS", "request_object":"vpnInfo"},
+    {"command":"HEARTBEAT_STATUS", "request_object":"networkInfo"},
 ]

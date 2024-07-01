@@ -1,0 +1,17 @@
+{
+  "columns": null,
+  "from_table": "fwinfo_latest",
+  "distinct": false,
+  "where": [],
+  "order": [
+    {
+      "column": "version",
+      "ascending": false
+    },
+    {
+      "column": "serial_number"
+    }
+  ],
+  "group": [],
+  "limit": null
+}

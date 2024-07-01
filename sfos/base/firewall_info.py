@@ -1,13 +1,12 @@
 """ SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
-file except in compliance with the License.
-You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing
-permissions and limitations under the License.
+file except in compliance with the License.You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed
+to in writing, software distributed under the License is distributed on an "AS IS"
+BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+the License for the specific language governing permissions and limitations under the
+License.
 """
 
 from __future__ import annotations
@@ -70,14 +69,13 @@ class FirewallInfo(BaseModel):
             "serial_number": self.applianceKey,
             "companyName": self.companyName,
             "username": self.name,
-            "record_date": self.start,
         }
 
     def to_json(self, indent: Literal[0, 1, 2, 3, 4] = 2) -> str:
         return json.dumps(self.base_info, indent=indent)
 
     @property
-    def license_dict(self) -> list:
+    def subscription_list(self) -> list:
         result = []
         sm = SubscriptionManager(self.subscriptions)
         for this in sm.subscriptions:
@@ -91,6 +89,12 @@ class FirewallInfo(BaseModel):
                         "timeframe": this.expiry_timeframe if exp else "",
                     }
                 )
+        return result
+
+    @property
+    def subscription_dict(self) -> dict:
+        subs = self.subscription_list
+        result = {"license_" + sub["name"]: sub for sub in subs if "name" in sub}
         return result
 
     def license(self) -> SubscriptionManager:

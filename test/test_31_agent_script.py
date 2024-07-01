@@ -1,13 +1,12 @@
 """ SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
-file except in compliance with the License.
-You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing
-permissions and limitations under the License.
+file except in compliance with the License.You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed
+to in writing, software distributed under the License is distributed on an "AS IS"
+BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+the License for the specific language governing permissions and limitations under the
+License.
 """
 import pytest
 
@@ -126,11 +125,11 @@ def test_run_script(fw: _connector, script1: Script) -> None:
     assert len(results) == 1
     result = results[0]
 
-    assert result["status"] is True
-    assert result["status_code"] == 200
+    assert result.success is True
+    assert result.status_code == 200
 
-    raw_data = result["response_raw"]
-    assert isinstance(raw_data, dict)
+    print("data type:", type(result.data))
+    assert isinstance(result.data, dict)
     e_data = {
         'hbStatus': {
             'registered': True,
@@ -143,7 +142,7 @@ def test_run_script(fw: _connector, script1: Script) -> None:
             }
         }
     }
-    t_data = result["data"]
+    t_data = result.data
 
     # assert "hbStatus" in t_data
     assert t_data == e_data

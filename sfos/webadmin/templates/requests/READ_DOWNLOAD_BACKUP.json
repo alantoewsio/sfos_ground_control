@@ -1,6 +1,6 @@
 {
-    "opcode_mode": 300,
-    "opcode_operation": 466,
+    "req_mode": 300,
+    "req_operation": 466,
     "web_path": "{PATH_CONTROLLER}",
     "web_method": "get",
     "web_headers": {

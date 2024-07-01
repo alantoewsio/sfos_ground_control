@@ -1,13 +1,12 @@
 """ SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
-file except in compliance with the License.
-You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing
-permissions and limitations under the License.
+file except in compliance with the License.You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed
+to in writing, software distributed under the License is distributed on an "AS IS"
+BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+the License for the specific language governing permissions and limitations under the
+License.
 """
 
 import os
@@ -44,7 +43,6 @@ def fwinfo_good() -> dict:
         "serial_number": "X123456789012",
         "companyName": "Test Inc.",
         "username": "testuser",
-        "record_date": "12-31-2999",
         "verify_tls": True,
         "message": None,
     }
@@ -60,7 +58,6 @@ def fwinfo_bad() -> dict:
         "serial_number": None,
         "companyName": None,
         "username": None,
-        "record_date": None,
         "verify_tls": None,
         "message": (
             "ERROR (<class 'sfos.base.exceptions.LoginError'>) "
@@ -81,7 +78,7 @@ def cleanup(dbname: str, assert_fail: bool = True) -> None:
 
 
 def test_init_db_tables(t_db: DB) -> None:
-    e_tbls = ["version", "fwinfo", "sqlite_sequence", "fwsubs"]
+    e_tbls = ["version", "inventory", "sqlite_sequence", "fwinfo", "fwsubs"]
     t_tbls = t_db.list_tables()
     assert t_tbls == e_tbls
 
@@ -102,11 +99,11 @@ def test_init_db_fwinfo_columns(t_db: DB) -> None:
         (5, "serial_number", "TEXT", 0, None, 0),
         (6, "companyName", "TEXT", 0, None, 0),
         (7, "username", "TEXT", 0, None, 0),
-        (8, "record_date", "TEXT", 0, None, 0),
-        (9, "verify_tls", "TEXT", 0, None, 0),
-        (10, "message", "TEXT", 0, None, 0),
-        (11, "timestamp", "TEXT", 0, None, 0),
+        (8, "verify_tls", "TEXT", 0, None, 0),
+        (9, "message", "TEXT", 0, None, 0),
+        (10, "timestamp", "TEXT", 0, None, 0),
     ]
+
     t_cols = t_db.list_table_col_defs("fwinfo")
     assert t_cols == e_cols
 

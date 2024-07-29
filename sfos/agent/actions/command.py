@@ -10,85 +10,55 @@ License.
 """
 
 import argparse as _args
-from datetime import datetime
-
 import prettytable
-from sfos.agent.methods import db_save_record as _db_save_record
+
+
 from sfos.agent.script_objs import ScriptItem, execute_script_item
 from sfos.base import GroundControlDB as _db
 from sfos.webadmin.connector import Connector as _conn, SfosResponse as _sresp
+from sfos.logging.logging import trace_calls, Level
 
 
+@trace_calls(Level.INFO, False, False)
 def run_command(
     firewalls: list[_conn],
     args: _args.Namespace,
+    state: dict | None = None,
     db: _db | None = None,
     print_results: bool = True,
 ) -> list[_sresp]:
     if args.command == "refresh":
         results = [run_command_refresh(fw, db) for fw in firewalls]
         if print_results:
-            query = db.select(
-                "address",
-                "serial_number",
-                "model",
-                "displayVersion",
-                "companyName",
-                "message",
-                "last_result",
-                "strftime('%d-%m-%Y', (last_seen/1000)) AS 'last update'",
-                from_table="inventory",
-            )
+            query = db.query_inventory_status()
             records = query.get_cursor()
             table = prettytable.from_db_cursor(records)
             print(table)
-        return results
+        return [results]
     else:
+        print("run_command_def args=", args)
         return [
-            run_command_def(fw, args.command, args.object, args.data)
+            run_command_def(fw, args.command, args.object, args.data, state)
             for fw in firewalls
         ]
 
 
-def run_command_refresh(
-    fw: _conn, db: _db | None = None, print_results: bool = True
-) -> _sresp:
-    tstart = datetime.now()
-    sresp = fw.get_info()
-    tstop = datetime.now()
-    tdiff = tstop - tstart
-    int(tdiff.microseconds / 1000)
-    print(".", end="")
-
-    if db:
-        _db_save_info_and_subs(sresp, db)
-
-    if sresp.success:
-        sresp.data = sresp.data.base_info
-        sresp.data["last_result"] = "ONLINE"
-        sresp.data["last_seen"] = tstop
-    else:
-        sresp.data = {}
-        sresp.data["last_result"] = "OFFLINE"
-        sresp.data["message"] = sresp.text
-
-    sresp.data["address"] = fw.address.hostname
-    sresp.data["reply_ms"] = int(tdiff.microseconds / 1000)
-    sresp.data["updated"] = tstop
-    db.upsert(
-        "inventory",
-        "address",
-        sresp.fw.address.hostname,
-        **sresp.data,
-    )
+def run_command_refresh(fw: _conn, db: _db | None = None) -> _sresp:
+    msg = f"fetching info from {fw.address.address}.."
+    print(msg, end="\r")
+    sfos_resp = fw.get_info()
+    print(" " * len(msg), end="\r")
+    db.add_or_update_inventory(fw, sfos_resp)
+    db.add_or_update_license(sfos_resp)
 
     return _sresp(
         fw=fw,
-        request=sresp.request,
-        response=sresp.response,
-        error=sresp.error,
-        data=sresp.data,
-        trace="101",
+        request=sfos_resp.request,
+        response=sfos_resp.response,
+        error=sfos_resp.error,
+        data=sfos_resp.data,
+        timer=sfos_resp.timer,
+        traceval="101",
     )
 
 
@@ -97,35 +67,7 @@ def run_command_def(
     command: str,
     request_object: str | None = None,
     data: str | None = None,
+    state: dict | None = None,
 ) -> list[_sresp]:
     cmd = ScriptItem(command, request_object, data)
     return execute_script_item(fw, cmd)
-
-
-def _db_save_info_and_subs(sresp: _sresp, db: _db | None) -> None:
-    if not db:
-        return
-    if sresp.success:
-        # save fwinfo
-        _db_save_record(
-            "fwinfo",
-            db,
-            address=sresp.fw.address.address,
-            verify_tls=sresp.fw.address.verify_tls,
-            **sresp.data.base_info,
-        )
-
-        # save fwsubs
-        [
-            _db_save_record("fwsubs", db, **sub)
-            for sub in sresp.data.subscription_list
-            if sub["end"]
-        ]
-    else:
-        db.insert_into(
-            "fwinfo",
-            timestamp=sresp.timestamp,
-            address=sresp.fw.address.url_base,
-            verify_tls=sresp.fw.address.verify_tls,
-            message=sresp.text,
-        )

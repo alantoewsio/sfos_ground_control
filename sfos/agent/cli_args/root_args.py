@@ -19,6 +19,12 @@ def setup_root_arguments(parser: _ap) -> _ap:
     Args:
         parser (_ap): _description_
     """
+    parser.add_argument(
+        "-vv", dest="verbose", action="store_true", default=False, help=_args.SUPPRESS
+    )
+    parser.add_argument(
+        "-vvv", dest="trace", action="store_true", default=False, help=_args.SUPPRESS
+    )
     conn = parser.add_argument_group("Connection options")
     inventory = conn.add_mutually_exclusive_group()
 
@@ -82,12 +88,8 @@ def setup_root_arguments(parser: _ap) -> _ap:
     help = "Run a stored report against collected records"
     action.add_argument("-r", "--report", action="store_true", help=help)
 
-    help = _args.SUPPRESS
     action.add_argument(
-        "-noop", dest="noop", action="store_true", default=False, help=help
-    )
-    parser.add_argument(
-        "-vv", dest="debug", action="store_true", default=False, help=help
+        "-noop", dest="noop", action="store_true", default=False, help=_args.SUPPRESS
     )
 
     # Added explicitly so it can be passed to action parsers

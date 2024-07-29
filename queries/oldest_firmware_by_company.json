@@ -1,0 +1,22 @@
+{
+    "columns": [
+        "companyName",
+        "model",
+        "count(serial_number) as firewalls",
+        "MIN(version) as oldest_version"
+    ],
+    "from_table": "inventory",
+    "distinct": false,
+    "where": [],
+    "order": [
+        {
+            "column": "companyName",
+            "ascending": true,
+            "nulls_first": ""
+        }
+    ],
+    "group": [
+        "companyName"
+    ],
+    "limit": null
+}

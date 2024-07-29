@@ -12,7 +12,8 @@ License.
 from sfos.agent.methods import (
     load_json_data as _load_json,
 )
-from sfos.base import CustomDict as _cdict, SfosMode as _req_mode
+from sfos.objects import CustomDict as _cdict
+from sfos.static import SfosMode as _req_mode
 from sfos.webadmin import (
     Connector,
     SfosResponse as _sresp,
@@ -49,12 +50,11 @@ class Script(_cdict):
     def execute(
         self,
         fw: Connector,
-        state: dict | None = None,
     ) -> list[_sresp]:
-        return execute_script(fw, self, state)
+        return execute_script(fw, self)
 
 
-def load_script(filename: str, state: dict | None = None) -> Script:
+def load_script(filename: str) -> Script:
     script = Script(_load_json(filename))
     return script
 
@@ -68,7 +68,8 @@ def execute_script_item(
     cmd = item["command"]
     req_obj = item["request_object"]
     req_object_def = load_request_object_data(cmd, req_obj) if req_obj else None
-    data = item["data"]
+    data = apply_state_vars(item["data"], state)
+
     script_items = make_sfos_request_from_template(
         command=cmd,
         request_object=req_object_def,
@@ -78,15 +79,32 @@ def execute_script_item(
     return fw.send_requests(*script_items)
 
 
-def execute_script(
-    fw: Connector, script: Script, state: dict | None = None
-) -> list[_sresp]:
+def apply_state_vars(data: dict, state: dict | None = None) -> dict:
+    if state is None:
+        return data
+
+    updated = {k: v.format(**state) for k, v in data.items() if isinstance(v, str)}
+    recurse = {
+        k: apply_state_vars(v, state) for k, v in data.items() if isinstance(v, dict)
+    }
+    preserved = {
+        k: v.format(**state)
+        for k, v in data.items()
+        if k not in updated and k not in recurse
+    }
+    result = dict(updated, **recurse, **preserved)
+
+    return result
+
+
+def execute_script(fw: Connector, script: Script) -> list[_sresp]:
     script_items = []
 
     for item in script["commands"]:
         cmd = item["command"]
         req_obj = item["request_object"]
         req_object_def = load_request_object_data(cmd, req_obj) if req_obj else None
+
         data = item["data"]
         reqs = make_sfos_request_from_template(
             command=cmd,
@@ -94,6 +112,7 @@ def execute_script(
             address=fw.address,
             data=data,
         )
+
         (
             script_items.extend(reqs)
             if isinstance(reqs, list)

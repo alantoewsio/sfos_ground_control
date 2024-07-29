@@ -11,12 +11,11 @@ License.
 
 import pytest
 
-from sfos.base import (
-    ServiceAddress as _sa,
+from sfos.objects import Definition as _srdef, ServiceAddress as _sa
+from sfos.static import (
     SfosMode as _req_mode,
     SfosOperation as _req_oper,
 )
-from sfos.webadmin.definition import Definition as _srdef
 from sfos.webadmin.methods import make_sfos_request as _make_req
 
 

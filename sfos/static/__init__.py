@@ -7,25 +7,24 @@ to in writing, software distributed under the License is distributed on an "AS I
 BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
 the License for the specific language governing permissions and limitations under the
 License.
-"""
+
+This module contains static values and definitions that may safely be imported by any
+module. Nothing in this module should reference anything else within sfos.*"""
 
 __all__ = [
-    "get_credential",
-    "GroundControlDB",
-    "init_db",
-    "QuerySources",
     "QueryOperators",
-    "headers_common",
-    "headers_get_common",
-    "headers_post_common",
-    "parse_index",
-    "CustomDict",
-    "Boolean",
-    "YesOrNo",
-    "TrueOrFalse",
-    "EnableOrDisable",
-    "EnabledOrDisabled",
+    "QuerySources",
+    "DATE_FMT",
+    "DATE_TIME_FMT",
+    "Level",
+    "SfosMode",
+    "SfosOperation",
+    "AgentError",
+    "ConnectionError",
+    "ProcessorError",
 ]
-from sfos.base.auth import get_credential
-from sfos.base.db import GroundControlDB, init_db
-from sfos.base.headers import headers_common, headers_get_common, headers_post_common
+
+from sfos.static.aliases import QueryOperators, QuerySources
+from sfos.static.constants import DATE_FMT, DATE_TIME_FMT
+from sfos.static.enums import Level, SfosMode, SfosOperation
+from sfos.static.exceptions import AgentError, ConnectionError, ProcessorError

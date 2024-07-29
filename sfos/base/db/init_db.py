@@ -9,7 +9,9 @@ the License for the specific language governing permissions and limitations unde
 License.
 """
 
-from sfos.base import GroundControlDB as _db
+from sfos.base.db import GroundControlDB as _db
+from sfos.logging.logging import log, Level
+from sfos.static import DATE_TIME_FMT as _DATE_FMT
 
 db = _db()
 
@@ -39,15 +41,15 @@ def init_db(filename: str | None = None) -> _db:
     global db
     db = None
     if filename:
-        # print(f"Initializing db '{filename}'")
+        log(Level.INFO, f"Initializing db '{filename}'")
         db = _db(filename)
     else:
         db = _db()
-        # print(f"Initialized db '{db.filename}'")
+        log(Level.INFO, f"Initialized db '{db.filename}'")
     assert db  # GroundControlDB class is instantiated successfully
 
     if db.create_db():
-        print(f"New GroundControl database created: '{db.filename}'")
+        log(Level.INFO, f"New GroundControl database created: '{db.filename}'")
 
     if "inventory" not in db.list_tables():
         cols = {
@@ -60,7 +62,8 @@ def init_db(filename: str | None = None) -> _db:
             "username": "TEXT",
             "verify_tls": "TEXT",
             "message": "TEXT",
-            "last_result": "TEXT DEFAULT 'none'",
+            "last_result": "TEXT DEFAULT ''",
+            "consecutive_fails": "INTEGER DEFAULT 0",
             "reply_ms": "INTEGER DEFAULT -1",
             "added": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
             "updated": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
@@ -68,34 +71,32 @@ def init_db(filename: str | None = None) -> _db:
         }
         db.create_table("inventory", **cols)
 
-    if "fwinfo" not in db.list_tables():
-        # print("creating fwinfo table")
-        cols = {k: "TEXT" for k in fwinfo_table}
-        cols["timestamp"] = "TEXT"
-        db.create_table("fwinfo", **cols)
+    if "licenses" not in db.list_tables():
+        cols = {
+            "uid": "TEXT UNIQUE",
+            "serial_number": "TEXT",
+            "name": "TEXT",
+            "start_date": "TIMESTAMP DEFAULT NULL",
+            "expiry_date": "TIMESTAMP DEFAULT NULL",
+            "bundle": "TEXT DEFAULT ''",
+            "status": "TEXT DEFAULT ''",
+            "deactivation_reason": "TEXT DEFAULT ''",
+            "type": "TEXT DEFAULT ''",
+            "added": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+            "updated": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        }
+        db.create_table("licenses", **cols)
+        status_view = (
+            "CREATE VIEW IF NOT EXISTS InventoryStatus AS "
+            "SELECT address as Address, serial_number as 'Serial Number', "
+            "model as Model, displayVersion as Version,companyName as Company, "
+            "message as 'Error Message',last_result as Status,"
+            f"strftime('{_DATE_FMT}', last_seen) as 'Last Seen', "
+            "CAST (strftime('%j',current_timestamp) - strftime('%j',last_seen) AS INT) "
+            "as 'Days Ago' "
+            "WHERE 'Days Ago' > 90 "
+            "ORDER BY last_result ASC, address"
+        )
+        db.execute(status_view)
 
-    if "fwsubs" not in db.list_tables():
-        # print("creating fwsubs table")
-        cols = {k: "TEXT" for k in fwsubs_table}
-        cols["timestamp"] = "TEXT"
-        db.create_table("fwsubs", **cols)
-
-    SQL = """CREATE VIEW IF NOT EXISTS fwinfo_latest AS
-    SELECT * FROM fwinfo
-    WHERE fwinfo.ID in (select UID from(
-    SELECT max(fi1.id) as UID, fi1.serial_number
-    FROM fwinfo as fi1
-    WHERE fi1.version IS NOT NULL
-    GROUP BY fi1.serial_number))"""
-    db.execute(SQL)
-
-    SQL = """CREATE VIEW IF NOT EXISTS fwinfo_missing AS
-    SELECT * FROM fwinfo
-    WHERE fwinfo.ID in (select UID from(
-    SELECT max(fi1.id) as UID, fi1.address
-    FROM fwinfo as fi1
-    WHERE fi1.version IS NULL
-    GROUP BY fi1.address))"""
-
-    db.execute(SQL)
     return db

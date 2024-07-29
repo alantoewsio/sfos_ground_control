@@ -10,22 +10,22 @@ License.
 """
 
 __all__ = [
-    "db_save_subs",
-    "db_save_info",
-    "db_save_record",
-    "load_json_data",
-    "read_cred_args",
-    "read_firewall_inventory",
-    "response_to_dict",
+    "log",
+    "trace",
+    "debug",
+    "info",
+    "error",
+    "trace_calls",
+    "Level",
+    "init_logging",
 ]
-
-
-from sfos.agent.methods.methods import (
-    db_save_subs,
-    db_save_info,
-    db_save_record,
-    load_json_data,
-    read_cred_args,
-    read_firewall_inventory,
-    response_to_dict,
+from sfos.logging.logging import (
+    log,
+    trace,
+    debug,
+    info,
+    error,
+    trace_calls,
+    Level,
+    init_logging,
 )

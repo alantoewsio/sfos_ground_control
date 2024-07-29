@@ -9,7 +9,7 @@ the License for the specific language governing permissions and limitations unde
 License.
 """
 
-from sfos.base.service_address import ServiceAddress
+from sfos.objects.service_address import ServiceAddress
 
 
 def test_service_address_simple() -> None:

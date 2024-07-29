@@ -11,8 +11,8 @@ License.
 
 import json
 import pytest
-from sfos.base import exceptions as _ex
-from sfos.base.custom_types import (
+from sfos.static import exceptions as _ex
+from sfos.objects.custom_types import (
     Boolean,
     TrueOrFalse,
     YesOrNo,

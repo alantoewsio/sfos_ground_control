@@ -19,7 +19,7 @@ __all__ = [
     "load_request_object_data",
     "SfosRequest",
 ]
-from sfos.webadmin.definition import Definition
+from sfos.objects.req_definition import Definition
 from sfos.webadmin.connector import Connector, SfosResponse
 from sfos.webadmin.methods import (
     load_definition,
@@ -27,4 +27,4 @@ from sfos.webadmin.methods import (
     make_sfos_request_from_template,
     load_request_object_data,
 )
-from sfos.webadmin.sfos_request import SfosRequest
+from sfos.objects.sfos_request import SfosRequest

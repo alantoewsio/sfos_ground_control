@@ -7,6 +7,10 @@ from sqlite3 import Connection, Cursor
 from typing import Any
 
 from sfos.db.query import Select
+from sfos.logging.logging import Level, log
+
+DATE_FMT = "%Y-%m-%d"
+DATE_TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
 class Database:
@@ -152,46 +156,76 @@ class Database:
         if value == "?":
             return value
         if isinstance(value, str):
-            return f"\"{self._escape(value)}\""
+            return f'"{self._escape(value)}"'
         if isinstance(value, int):
             return f"{value}"
         if isinstance(value, datetime):
-            return str(value.timestamp())
+            return f'"{value.strftime(DATE_TIME_FMT)}"'
         return str(value)
 
-    def upsert(self, table: str, key_col: str, key_val: str, **field_data) -> list:
-        all_cols = self.list_table_cols(table)
-        update_cols = list(field_data.keys())
-        params = list(field_data.values())
-        # update_values = ["?"]*len(update_cols)
+    def partial_update(
+        self,
+        table: str,
+        key_col: str | list[str],
+        **field_data,
+    ) -> list:
+        unchanged_cols = self.list_table_cols(table)
+        updating_cols = list(field_data.keys())
+        new_vals = []
+        increment_cols = []
+        increment_vals = []
 
-        keep_or_upd = []
-        for col in all_cols:
-            keep_or_upd.append(f"new.{col}" if col in update_cols else f"old.{col}")
-        upsert_cols = ", ".join(keep_or_upd)
-        upd_cols = ", ".join(update_cols)
-        # upd_vals = ", ".join([self._fmt(value) for value in update_values])
-        upd_vals = ", ".join([self._fmt(value) for value in params])  # update_values])
-        sql = (
-            f"WITH new ({upd_cols}) AS ( VALUES({upd_vals}) ) "
-            f"INSERT OR REPLACE INTO {table} ({", ".join(all_cols)}) "
-            f"SELECT {upsert_cols} "
-            f"FROM new LEFT JOIN {table} AS old "
-            f"ON new.{key_col} = old.{key_col} "
-            # f"WHERE old.{key_col}='{key_val}' "
+        for col, val in field_data.items():
+            if col in unchanged_cols:
+                unchanged_cols.remove(col)
+            if val is None:
+                new_vals.append("NULL")
+            elif val == "<INCREMENT>":
+                updating_cols.remove(col)
+                increment_cols.append(col)
+                increment_vals.append(f"old.{col} + 1 as {col}")
+            else:
+                new_vals.append(self._fmt(val))
+
+        # list all columns in the order that values will be defined
+        insert_into_c = []
+        insert_into_c.extend(unchanged_cols)
+        insert_into_c.extend(updating_cols)
+        insert_into_c.extend(increment_cols)
+
+        # Set the column order that values will be set in the final update query
+        neworold_vals = []
+        neworold_vals.extend([f"old.{col}" for col in unchanged_cols])
+        neworold_vals.extend([f"new.{col}" for col in updating_cols])
+        neworold_vals.extend(increment_vals)
+
+        sub_join_c = ", ".join(neworold_vals)
+        with_c = ", ".join(updating_cols)
+        with_v = ", ".join(new_vals)
+        insert_c = ", ".join(insert_into_c)
+
+        sql_with_c_v = f"WITH new ({with_c}) AS (VALUES({with_v})) "
+        sql_insert_c = f"INSERT OR REPLACE INTO {table} ({insert_c}) "
+        if isinstance(key_col, list):
+            key_cols = "USING(" + ",".join(key_col) + ")"
+        else:
+            key_cols = f"USING({key_col})"
+
+        sql_sub_insert_v = (
+            f"SELECT {sub_join_c} " f"FROM new LEFT JOIN {table} AS old {key_cols}"
         )
-        # try:
-        # result = self.execute(sql, parameters=params, close=False)
-        result = self.execute(sql,  close=False)
+
+        sql = f"{sql_with_c_v}{sql_insert_c}{sql_sub_insert_v}"
+        # print("partial_update sql=\n", sql)
+        result = self.execute(sql, close=False)
         return result
-        # except Exception as e:
-        #     print("Execute error: ", str(e), type(e))
 
     def insert_into(
         self,
         table_name: str,
         ignore_extra=False,
         close: bool = True,
+        replace: bool = False,
         **field_data,
     ):
         try:
@@ -210,7 +244,8 @@ class Database:
 
             placeholders = ", ".join("?" * len(columns))
             sql = (
-                f"INSERT INTO {table_name} ({', '.join(columns)}) "
+                f"INSERT {'OR REPLACE' if replace else ''} "
+                f"INTO {table_name} ({', '.join(columns)}) "
                 f"VALUES ({placeholders})"
             )
 
@@ -263,4 +298,10 @@ class Database:
 
             return results
         except Exception as e:
+            log(
+                Level.ERROR,
+                Error=f"{e}",
+                statement=statement,
+                parameters=parameters,
+            )
             raise e

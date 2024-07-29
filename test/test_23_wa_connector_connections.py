@@ -11,8 +11,10 @@ License.
 
 import pytest
 
-from sfos.base import exceptions as _ex, ServiceAddress as _sa, FirewallInfo as _fwi
-from sfos.webadmin.connector import Connector as _fw, AUTH_SUCCESS_MSG, AUTH_FAIL_MSG
+from sfos.objects import ServiceAddress as _sa, FirewallInfo as _fwi
+from sfos.static import exceptions as _ex
+from sfos.static.constants import AUTH_SUCCESS_MSG, AUTH_FAIL_MSG
+from sfos.webadmin.connector import Connector as _fw
 from test.tools import load_env_file
 
 from test.tools import save_response
@@ -53,11 +55,11 @@ def bad_creds() -> dict:
 
 def test_login_good(address: _sa, good_creds: dict) -> None:
     t_fw = _fw(address=address, credentials=good_creds)
-    auth, token = t_fw._get_login_req_cmds()
+    r_auth, r_get_token = t_fw._get_login_req_cmds()
 
-    # send requests one at a time to correlate with request
+    # send requests one at a time to correlate with responses
     t_fw._logging_in = True
-    rslt = t_fw.send_requests(auth, token)
+    rslt = t_fw.send_requests(r_auth, r_get_token)
     (r_auth, r_token) = rslt
 
     if not r_auth.text == AUTH_SUCCESS_MSG:
@@ -98,16 +100,17 @@ def test_login_fn_bad(address: _sa, bad_creds: dict) -> None:
     assert isinstance(sresp.error, _ex.LoginError)
 
 
-def test_login_fn_name_resolution_error(address: _sa, bad_creds: dict) -> None:
+def test_login_fn_name_resolution_error(bad_creds: dict) -> None:
     t_fw = _fw(hostname="badhost", credentials=bad_creds)
 
     sresp = t_fw.login()
     assert sresp.success is False
     assert sresp.error
+    print("trace:", sresp.trace, "type:", type(sresp.error), "err:", sresp.error)
     assert isinstance(sresp.error, _ex.NameResolutionError)
 
 
-def test_login_fn_timeout_error(address: _sa, bad_creds: dict) -> None:
+def test_login_fn_timeout_error(bad_creds: dict) -> None:
     t_fw = _fw(_sa(hostname="10.98.76.54", timeout=1), credentials=bad_creds)
 
     sresp = t_fw.login()

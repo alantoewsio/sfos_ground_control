@@ -42,9 +42,7 @@ class Select:
         self._where = self._order = self._group = self._params = []
 
         if from_file:
-            print("loading file", from_file)
             from_dict = self._import(from_file)
-            print("loaded", from_dict)
 
         if from_dict:
             if _execute and "_execute" not in from_dict:
@@ -110,8 +108,10 @@ class Select:
         self._where.append(_Where(column, operator, criteria))
         return self
 
-    def order_by(self, column: str, ascending: bool = True) -> Self:
-        self._order.append(_OrderBy(column, ascending))
+    def order_by(
+        self, column: str, ascending: bool = True, nulls_first: bool | None = None
+    ) -> Self:
+        self._order.append(_OrderBy(column, ascending, nulls_first))
         return self
 
     def group_by(self, column: str) -> Self:
@@ -147,15 +147,16 @@ class Select:
             else []
         )
         self._params = params  # if params else None
+
+        _group = " GROUP BY " + ", ".join(self._group) if self._group else ""
         _order = (
             " ORDER BY " + ", ".join([this.__sql__ for this in self._order])
             if self._order
             else ""
         )
-        _group = " GROUP BY " + ", ".join(self._group) if self._group else ""
         _limit = f" LIMIT {self._limit}" if self._limit else ""
 
-        return f"{_select}{_where}{_order}{_group}{_limit}"
+        return f"{_select}{_where}{_group}{_order}{_limit}"
 
     def export(self, filename: str, indent=0) -> None:
         with open(filename, "w") as qfile:
@@ -177,9 +178,9 @@ class _OrderBy:
     ) -> None:
         self.column = column
         self._ascending = ascending
-        self.nulls_first = nulls_first
+        self._nulls_first = nulls_first
         self.ascending = "" if ascending is None else " ASC" if ascending else " DESC"
-        self.nulls = (
+        self.nulls_first = (
             ""
             if nulls_first is None
             else " NULLS FIRST" if nulls_first else " NULLS LAST"
@@ -187,7 +188,7 @@ class _OrderBy:
 
     @property
     def __sql__(self) -> str:
-        return f"{self.column}{self.ascending}{self.nulls}"
+        return f"{self.column}{self.ascending}{self.nulls_first}"
 
     @property
     def __dict__(self) -> dict:

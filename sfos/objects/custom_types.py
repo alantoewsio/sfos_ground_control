@@ -14,7 +14,7 @@ import json_fix
 
 from typing import Any, Literal
 
-from sfos.base import exceptions as _ex
+from sfos.static import exceptions as _ex
 
 EMPTY_STRING = ""
 true = "true"

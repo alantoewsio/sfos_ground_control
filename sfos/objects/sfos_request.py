@@ -22,3 +22,4 @@ class SfosRequest:
     method: Literal["get", "post"]
     verify: bool
     timeout: int
+    special: str | None

@@ -16,7 +16,7 @@ from sfos.agent import (
     load_script,
     execute_script,
 )
-from sfos.base import ServiceAddress as _sa
+from sfos.objects import ServiceAddress as _sa
 from sfos.webadmin import (
     Connector as _connector,
     make_sfos_request_from_template as _make_sfos_request_from_template,

@@ -1,0 +1,18 @@
+{
+"columns": [
+"SUBSTRING(version, 1, 4) as major_ver",
+"MAX(version) as latest"
+],
+"from_table": "inventory",
+"distinct": false,
+"where": [
+{
+"column": "version",
+"operator": "is not",
+"criteria": null
+}
+],
+"order": [],
+"group": [],
+"limit": 2
+}

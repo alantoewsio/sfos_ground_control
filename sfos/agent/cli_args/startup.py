@@ -23,7 +23,7 @@ from sfos.agent.cli_args.report_args import setup_report_arguments as _setup_rep
 from sfos.agent.cli_args.script_args import setup_script_arguments as _setup_script
 from sfos.agent.cli_args.root_args import setup_root_arguments as _setup_root
 from sfos.webadmin.connector import Connector
-
+from sfos.logging.logging import trace_calls, Level, init_logging
 
 ArgActions: TypeAlias = Literal[
     "info",
@@ -50,6 +50,8 @@ License.
 h_foot = """Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0. See LICENSE file for full info"""
 # Used for positional type hinting in init_cli return
+
+
 _root: TypeAlias = _ap
 _command: TypeAlias = _ap
 _query: TypeAlias = _ap
@@ -87,6 +89,7 @@ def init_cli() -> Parsers:
     return (p_root, p_command, p_query, p_report, p_script)
 
 
+@trace_calls(Level.DEBUG, False, False)
 def read_root_args(
     root_args: list[str] | None = None, parsers: Parsers | None = None
 ) -> tuple[list[Connector], _args.Namespace, str]:
@@ -98,7 +101,24 @@ def read_root_args(
     if not parsers:
         parsers = init_cli()
     (p_root, p_cmd, p_query, p_report, p_script) = parsers
+    p_dict = {
+        "command": p_cmd,
+        "query": p_query,
+        "report": p_report,
+        "script": p_script,
+        "noop": None,
+        "help": None,
+    }
     args, rest = p_root.parse_known_args(root_args)
+
+    if args.verbose:
+        print("DEBUG MODE")
+        init_logging(Level.DEBUG)
+    elif args.trace:
+        print("TRACE MODE")
+        init_logging(Level.TRACE)
+    else:
+        init_logging(Level.INFO)
 
     if args.help:
         rest.append("-h")
@@ -108,17 +128,23 @@ def read_root_args(
         firewalls = read_firewall_inventory(args, creds)
 
     if args.command:
-        return firewalls, p_cmd.parse_args(rest), "command"
+        action = "command"
     elif args.query:
-        return firewalls, p_query.parse_args(rest), "query"
+        action = "query"
     elif args.report:
-        return firewalls, p_report.parse_args(rest), "report"
+        action = "report"
     elif args.script:
-        return firewalls, p_script.parse_args(rest), "script"
+        action = "script"
     elif args.noop:
-        return firewalls, None, "noop"
+        action = "noop"
     elif args.help:
         p_root.print_help()
-        return [], None, "help"
+        action = "Help"
+        rest = []
     else:
-        return firewalls, p_cmd.parse_args(["refresh"]), "command"
+        action = "command"
+        rest = ["refresh"]
+
+    parser = p_dict[action]
+    act_args, act_rest = parser.parse_known_args(rest) if parser else ([], [])
+    return firewalls, act_args, action, act_rest

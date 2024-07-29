@@ -6,15 +6,15 @@ from requests import Session
 from typing import Literal
 from urllib import parse
 
-from sfos.base import (
+from sfos.logging.logging import log, Level
+from sfos.objects import ServiceAddress as _sa
+from sfos.static import (
     exceptions as _ex,
     SfosMode as _req_mode,
     SfosOperation as _req_oper,
-    ServiceAddress as _sa,
 )
-
-from sfos.webadmin.definition import Definition as _srdef
-from sfos.webadmin.sfos_request import SfosRequest as _req
+from sfos.objects.req_definition import Definition as _srdef
+from sfos.objects.sfos_request import SfosRequest as _req
 
 
 separators = {True: "&", False: "\n"}
@@ -36,7 +36,7 @@ def get_common_headers(method: Literal["get", "post"], path: str = HEADER_PATH) 
     return {**h_common, **h_method}
 
 
-def _find_file(name: str, paths: list[str]) -> str:
+def _find_file(name: str, paths: list[str]) -> str | None:
     for path in paths:
         this = os.path.join(path, name)
         if os.path.exists(this):
@@ -51,6 +51,7 @@ def load_request_object_data(
 ) -> dict:
     if isinstance(name, dict):
         return name
+
     path = path or OBJECT_PATH
     # make sure command is a string value
     if isinstance(command, _req_mode):
@@ -76,16 +77,34 @@ def load_definition(
     path: str | list[str] = REQ_TEMPLATE_PATH,
     header_path: str | list[str] = HEADER_PATH,
 ) -> _srdef | list[_srdef]:
+    """Loads a command definition from file
+    accepts:
+      name: str | SfosMode      -String or enum name should match (without extension)
+                                 to a json file in the given path
+      path: str | list          -File path lor list of paths to look for the definition
+                                 file
+      header_path: str | list   -File path lor list of paths to look for the header
+                                 definition file
+    """
+
     path = path or REQ_TEMPLATE_PATH
     header_path = header_path or HEADER_PATH
     if isinstance(name, _req_mode):
         name = name.name
     name = name if name.endswith(".json") else f"{name}.json"
-    path = _find_file(name, path) if isinstance(path, list) else path
-    if path is None:
+    filepath = _find_file(name, path) if isinstance(path, list) else path
+    if filepath is None:
+        log(
+            level=Level.ERROR,
+            action="load_definition",
+            definition=name,
+            error="Not Found",
+        )
         raise _ex.DefinitionNotFound("Definition not found:", name)
 
-    def_data = load_json_data(name, path)
+    log(level=Level.INFO, action="load_definition", definition=name, file=filepath)
+
+    def_data = load_json_data(name, filepath)
     if isinstance(def_data, list):
         return [_dict_to_def(item) for item in def_data]
     else:
@@ -96,6 +115,9 @@ def _dict_to_def(
     req_dict: dict,
     header_path: str | list[str] = HEADER_PATH,
 ) -> _srdef | list[_srdef]:
+    """Returns a Definition class instance created from the req_dict values
+    accepts:
+      req_dict: dict    Values to use when creating a Definition class instance"""
     header_path = header_path or HEADER_PATH
     common_headers = get_common_headers(req_dict["web_method"], header_path)
 
@@ -109,6 +131,9 @@ def _dict_to_def(
         req_dict["req_operation"] = _req_oper(req_dict["req_operation"])
     else:
         req_dict["req_operation"] = _req_oper.NONE
+
+    if "special" not in req_dict:
+        req_dict["special"] = None
 
     # add common method headers
     req_dict["web_headers"] = {**common_headers, **req_dict["web_headers"]}
@@ -152,6 +177,7 @@ def _prepare_req_headers(headers: dict[str, str], address: _sa) -> dict[str, str
         "PORT": address.port,
         "ROOT_URL": address.url_base,
         "CONTROLLER_URL": address.url_controller,
+        "INDEX_URL": address.url_index_jsp,
         "INDEX_JSP_URL": address.url_index_jsp,
         "LOGIN_URL": address.url_login_jsp,
     }
@@ -251,6 +277,7 @@ def make_sfos_request(
         body=data,
         verify=address.verify_tls,
         timeout=address.timeout,
+        special=definition.special,
     )
     return data
 

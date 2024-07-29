@@ -72,7 +72,7 @@ def test_select_cols_limit() -> None:
     assert t_sql_6 == e_sql_6
 
 
-def test_select_cols_group(select_cols: Select) -> None:
+def test_select_cols_group() -> None:
     cols = ["colT", "colU", "colV"]
     act_col = cols[2]
 

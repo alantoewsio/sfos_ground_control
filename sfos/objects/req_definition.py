@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Literal
 
-from sfos.base import SfosMode as _req_mode, SfosOperation as _req_oper
+from sfos.static.enums import SfosMode as _req_mode, SfosOperation as _req_oper
 
 
 class Definition:
@@ -16,6 +16,7 @@ class Definition:
         urlencode: bool | None = None,
         separator: str | None = None,
         arguments: dict | None = None,
+        special: str | None = None,
     ):
 
         # Constants
@@ -32,3 +33,4 @@ class Definition:
         self.urlencode = urlencode or web_method == "get"
         self.separator = separator
         self.arguments = arguments
+        self.special = special

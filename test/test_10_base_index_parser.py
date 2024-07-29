@@ -12,13 +12,14 @@ License.
 import json
 import pytest
 
-from sfos.base import (
+from sfos.objects.firewall_info import (
     FirewallInfo as _firewall_info,
-    exceptions as _ex,
-    index_parser as _ip,
-    index_match_values as _iv,
+    IndexParser as _ip,
 )
+from sfos.static import patterns as _iv
 
+
+from sfos.static import exceptions as _ex
 from test.tools import get_sample
 
 sample_files = ["test_v20_ga_index.jsp"]
@@ -72,13 +73,13 @@ def test_compiled_regex(sample: str) -> None:
 
 def test_index_parser_methods(sample: str) -> None:
     search_text = sample  # get_sample(file)
-    tester = _ip.IndexParser()
+    tester = _ip()
     tester._search_for_pattern(_iv.RE_TO_FIND_CSRF_KEY_VALUE_DEFAULT, search_text)
 
 
 def test_index_parser_call(sample: str) -> None:
     search_text = sample  # get_sample(file)
-    read_index = _ip.IndexParser()
+    read_index = _ip()
     try:
         result = read_index(search_text)
         assert isinstance(result, _firewall_info)

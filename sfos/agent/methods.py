@@ -19,13 +19,13 @@ from requests.utils import dict_from_cookiejar as _dict_from_cookiejar
 
 from sfos.base import (
     get_credential as _get_credential,
-    FirewallInfo as _fwi,
     GroundControlDB as _db,
-    ServiceAddress as _sa,
 )
+from sfos.objects import FirewallInfo as _fwi, ServiceAddress as _sa
 from sfos.webadmin import Connector
 
 
+# @log_calls_decorator(Level.DEBUG, True, False)
 def db_save_subs(db: _db | None = None, all_info: _fwi | None = None) -> None:
     if not (db or all_info):
         return
@@ -39,6 +39,7 @@ def db_save_subs(db: _db | None = None, all_info: _fwi | None = None) -> None:
         )
 
 
+# @log_calls_decorator(Level.DEBUG, True, False)
 def db_save_record(
     table: str,
     db: _db | None = None,
@@ -54,6 +55,7 @@ def db_save_record(
     )
 
 
+# @log_calls_decorator(Level.DEBUG, True, False)
 def db_save_info(
     db: _db | None = None,
     all_info: _fwi | None = None,
@@ -78,6 +80,12 @@ def tbl_to_str() -> str:
 
 
 def process_state_variables(raw_script: str, state: dict | None = None) -> str:
+    """Replaces placeholder {variable} srings in raw_script with values of matching
+      keys in state dict, if present
+      Accepts:
+        raw_script: str  raw text contents of script to be run
+        state: dict      a dict containing variable keys and replacement values
+      """
     result = raw_script
     if r"{state." in raw_script:
         for k in state.items():

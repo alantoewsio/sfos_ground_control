@@ -10,13 +10,12 @@ License.
 """
 
 import pytest
-from sfos.base import (
-    ServiceAddress as _sa,
+from sfos.objects import Definition as _def, ServiceAddress as _sa
+from sfos.static import (
     SfosMode as _req_mode,
     SfosOperation as _req_oper,
 )
 from sfos.webadmin import methods as _m
-from sfos.webadmin.definition import Definition as _def
 
 
 @pytest.fixture

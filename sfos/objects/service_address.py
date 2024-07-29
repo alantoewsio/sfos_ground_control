@@ -9,6 +9,7 @@ the License for the specific language governing permissions and limitations unde
 License.
 """
 
+import json
 from urllib import parse
 
 
@@ -33,8 +34,24 @@ class ServiceAddress:
         self.PATH_INDEX_JSP = "webconsole/webpages/index.jsp"
         self.PATH_LOGIN_JSP = "webconsole/webpages/login.jsp"
 
+    @property
+    def __dict__(self) -> dict:
+        return {
+            "host": self.hostname,
+            "port": self.port,
+            "verify_tls": self.verify_tls,
+            "timeout": self.timeout,
+        }
+
+    def __json__(self) -> dict:
+        return {"ServiceAddress": self.__dict__}
+
+    @property
     def __repr__(self) -> str:
-        return f"'host': '{self.hostname}', 'port': {self.port}"
+        return json.dumps(self.__json__())
+
+    def __str__(self) -> str:
+        return self.address
 
     def __call__(self) -> str:
         return self.address

@@ -7,6 +7,10 @@ to in writing, software distributed under the License is distributed on an "AS I
 BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
 the License for the specific language governing permissions and limitations under the
 License.
+
+This module provides interpretation of command line options and execution of those
+options. It will import other sfos modules but should not import anything outside of
+sfos.static
 """
 
 __all__ = [
@@ -14,8 +18,8 @@ __all__ = [
     "run_query",
     "init_cli",
     "read_root_args",
-    "init_db",
     "db",
+    "GroundControlDB",
     "start_agent",
     "Script",
     "ScriptItem",
@@ -26,8 +30,8 @@ __all__ = [
 from sfos.agent.actions import run_command, run_query
 from sfos.agent.cli_args import init_cli, read_root_args
 
-from sfos.agent.init_db import init_db, db
-from sfos.agent.agent_main import start_agent
+
+from sfos.agent.agent_main import db, start_agent
 from sfos.agent.script_objs import (
     Script,
     ScriptItem,

@@ -16,7 +16,7 @@ __all__ = [
     "run_scripts",
 ]
 
-from sfos.agent.actions.command import run_command, run_command_refresh
+from sfos.agent.actions.command import run_command
 from sfos.agent.actions.query import run_query
 from sfos.agent.actions.script import run_scripts
 

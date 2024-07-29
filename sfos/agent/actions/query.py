@@ -13,8 +13,10 @@ import argparse as _args
 import prettytable
 
 from sfos.base import GroundControlDB as _db
+from sfos.logging.logging import trace_calls, Level
 
 
+@trace_calls(Level.DEBUG, False, False)
 def run_query(
     args: _args.Namespace,
     db: _db,

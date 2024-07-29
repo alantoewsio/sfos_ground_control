@@ -11,7 +11,17 @@ License.
 
 from enum import Enum
 
+
 # Enum classes
+# Logging level
+class Level(Enum):
+    CRITICAL = 50
+    ERROR = 40
+    WARNING = 30
+    INFO = 20
+    DEBUG = 10
+    TRACE = 5
+    NONE = 0
 
 
 class SfosMode(Enum):

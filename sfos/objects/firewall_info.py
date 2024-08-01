@@ -163,10 +163,11 @@ class License:
                     if "display_bundle" in item
                 ]
             )
+            bundle = "a-la-carte" if self.bundle_name == "No" else self.bundle_name
             self.entitlements = [
                 Entitlement(
                     subscription,
-                    bundle=self.bundle_name,
+                    bundle=bundle,
                     serial_number=serial_number,
                 )
                 for subscription in subscriptions_data

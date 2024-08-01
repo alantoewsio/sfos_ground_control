@@ -1,0 +1,32 @@
+{
+"columns": [
+"address as Address",
+"serial_number as 'Serial Number'",
+"model as Model",
+"displayVersion as Version",
+"companyName as Company",
+"message as 'Error Message'",
+"last_result as Status",
+"strftime('%Y-%m-%d %H:%M:%S', last_seen) as 'Last Seen Date' ",
+"CAST (strftime('%j',current_timestamp) - strftime('%j',last_seen) AS INT) as 'Days Ago' "
+],
+"from_table": "inventory",
+"distinct": false,
+"where": [],
+"order": [
+{
+"column": "'Last Seen Date'",
+"ascending": false,
+"nulls_first": false
+},
+{
+"column": "Status",
+"ascending": true,
+"nulls_first": null
+}
+],
+"group": [
+"companyName"
+],
+"limit": null
+}

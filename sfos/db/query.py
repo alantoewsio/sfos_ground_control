@@ -75,7 +75,7 @@ class Select:
         if not from_table:
             raise ArgumentError("Missing argument 'from_table'")
 
-        self._table = from_table
+        self._from = [FromTable(from_table)] if from_table else []
         self._save_columns = columns if columns else None
         self._columns = columns if columns else ["*"]  # [self._table + ".*"]
         self._distinct = distinct or False
@@ -98,6 +98,14 @@ class Select:
             "group": self._group,
             "limit": self._limit,
         }
+
+    def from_table(self, table_name: str) -> Self:
+        self._from.append(FromTable(table_name))
+        return self
+
+    def from_subquery(self, subquery: Select) -> Self:
+        self._from.append(Subquery(subquery))
+        return self
 
     def where(
         self,
@@ -169,6 +177,37 @@ class Select:
             return json.load(qfile)
 
 
+class FromTable:
+    def __init__(self, table: str):
+        self.table = table
+
+    def __sql__(self) -> str:
+        return f"{self.table}"
+
+    @property
+    def __dict__(self) -> dict:
+        return {"table": self.from_table}
+
+
+class Subquery:
+    def __init__(
+        self,
+        subquery: Select,
+        as_name: str | None = None,
+    ) -> None:
+        self.as_name = as_name
+        self.subquery = subquery
+
+    @property
+    def __sql__(self) -> str:
+        asname = f" AS {self.as_name}" if self.as_name else ""
+        return f"({self.subquery.__sql__}){asname}"
+
+    @property
+    def __dict__(self) -> dict:
+        return {"table": self.from_table}
+
+
 class _OrderBy:
     def __init__(
         self,
@@ -188,6 +227,57 @@ class _OrderBy:
 
     @property
     def __sql__(self) -> str:
+        return f"{self.column}{self.ascending}{self.nulls_first}"
+
+    @property
+    def __dict__(self) -> dict:
+        return {
+            "column": self.column,
+            "ascending": self._ascending,
+            "nulls_first": self._nulls_first,
+        }
+
+
+class FromJoin:
+
+    def __init__(
+        self,
+        table_or_subquery: str | Subquery,
+        operator: Literal["natural", "cross"] | None = None,
+        join: Literal["left", "right", "full", "inner"] | None = None,
+        outer: bool = False,
+        on_expression: str | None = None,
+        *using: str,
+    ) -> None:
+        self._table_or_subquery = table_or_subquery
+        self._operator = operator
+        self._join = join
+        self._outer = outer
+        self._on_expression = on_expression
+        self._using = using
+        if operator:
+            assert on_expression is None
+            assert not using
+        if operator == "cross":
+            assert not join
+
+    @property
+    def __sql__(self) -> str:
+        sql += f"{self._operator.upper} " if self._operator else ""
+        sql += "OUTER " if self._outer and self._join else ""
+        sql += f"{self._join.upper} " if self._join else ""
+
+        if isinstance(self._table_or_subquery, Subquery):
+            sql += self._table_or_subquery.__sql__
+        else:
+            sql += self._table_or_subquery
+
+        if self._on_expression:
+            sql += f" ON {self._on_expression}"
+
+        elif self._using:
+            sql += f" USING ({', '.join(self._using)})"
+
         return f"{self.column}{self.ascending}{self.nulls_first}"
 
     @property

@@ -1,4 +1,5 @@
 from sfos.db import Select
+from sfos.static import DATE_TIME_FMT as _DATE_TIME_FMT
 
 # Create new JSON format queries following the example below,
 # then run 'python custom_queries.py' to create query json files.
@@ -24,3 +25,26 @@ query = (
     .order_by("companyName")
 )
 query.export("queries/oldest_firmware_by_company.json")
+
+query = (
+    Select(
+        "address as Address",
+        "serial_number as 'Serial Number'",
+        "model as Model",
+        "displayVersion as Version",
+        "companyName as Company",
+        "message as 'Error Message'",
+        "last_result as Status",
+        f"strftime('{_DATE_TIME_FMT}', last_seen) as 'Last Seen Date' ",
+        (
+            "CAST ("
+            "strftime('%j',current_timestamp) - "
+            "strftime('%j',last_seen) "
+            "AS INT) as 'Days Ago' "
+        ),
+        from_table="inventory",
+    )
+    .order_by("'Last Seen Date'", ascending=False, nulls_first=False)
+    .order_by("Status")
+)
+query.export("queries/status.json")

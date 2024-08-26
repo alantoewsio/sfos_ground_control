@@ -23,7 +23,7 @@ from sfos.agent.cli_args.report_args import setup_report_arguments as _setup_rep
 from sfos.agent.cli_args.script_args import setup_script_arguments as _setup_script
 from sfos.agent.cli_args.root_args import setup_root_arguments as _setup_root
 from sfos.webadmin.connector import Connector
-from sfos.logging.logging import trace_calls, Level, init_logging
+from sfos.logging.logging import Level, init_logging
 
 ArgActions: TypeAlias = Literal[
     "info",
@@ -33,12 +33,12 @@ ArgActions: TypeAlias = Literal[
     "password-check",
     "run-script",
 ]
-h_desc = (
+HELP_DESC = (
     "GroundControl Agent 1.0\n"
     "An automation library for\n"
     "WebAdmin actions in Sophos Firewall (SFOS)"
 )
-h_foot_full = """Copyright 2024 Sophos Ltd.  All rights reserved.
+HELP_FULL_FOOTER = """Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
 http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed
@@ -47,24 +47,26 @@ BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 the License for the specific language governing permissions and limitations under the
 License.
 """
-h_foot = """Copyright 2024 Sophos Ltd.  All rights reserved.
+HELP_SHORT_FOOTER = """Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0. See LICENSE file for full info"""
 # Used for positional type hinting in init_cli return
 
 
-_root: TypeAlias = _ap
-_command: TypeAlias = _ap
-_query: TypeAlias = _ap
-_report: TypeAlias = _ap
-_script: TypeAlias = _ap
-Parsers: TypeAlias = tuple[_root, _command, _query, _report, _script]
+APRoot: TypeAlias = _ap
+APCommand: TypeAlias = _ap
+APQuery: TypeAlias = _ap
+APReport: TypeAlias = _ap
+APScript: TypeAlias = _ap
+Parsers: TypeAlias = tuple[APRoot, APCommand, APQuery, APReport, APScript]
 
 
-def _init_parser(prog: str = "", add_help: bool = True, epilog: str = h_foot) -> _ap:
+def _init_parser(
+    prog: str = "", add_help: bool = True, epilog: str = HELP_SHORT_FOOTER
+) -> _ap:
     return _ap(
-        description=h_desc,
+        description=HELP_DESC,
         prog=prog,
-        epilog=h_foot,
+        epilog=epilog,
         allow_abbrev=True,
         add_help=add_help,
     )
@@ -74,7 +76,7 @@ def init_cli() -> Parsers:
     """Defines the argparse CLI arguments accepted by gccli.py
     Returns (p_root, p_command, p_query, p_report, p_script)"""
     parsers = (
-        _init_parser(add_help=False, epilog=h_foot_full),
+        _init_parser(add_help=False, epilog=HELP_FULL_FOOTER),
         _init_parser("gc command"),
         _init_parser("gc query"),
         _init_parser("gc report"),
@@ -89,7 +91,6 @@ def init_cli() -> Parsers:
     return (p_root, p_command, p_query, p_report, p_script)
 
 
-@trace_calls(Level.DEBUG, False, False)
 def read_root_args(
     root_args: list[str] | None = None, parsers: Parsers | None = None
 ) -> tuple[list[Connector], _args.Namespace, str]:
@@ -98,8 +99,10 @@ def read_root_args(
     Args:
         args (list[str]): The argparse namespace used to capture CLI arguments
     """
-    if not parsers:
+    if parsers is None:
         parsers = init_cli()
+
+    # break parser objects out for direct reference
     (p_root, p_cmd, p_query, p_report, p_script) = parsers
     p_dict = {
         "command": p_cmd,
@@ -111,6 +114,7 @@ def read_root_args(
     }
     args, rest = p_root.parse_known_args(root_args)
 
+    # Set log level
     if args.verbose:
         print("DEBUG MODE")
         init_logging(Level.DEBUG)
@@ -120,6 +124,7 @@ def read_root_args(
     else:
         init_logging(Level.INFO)
 
+    # Show cli help if requested, or pass -h to command parsers
     if args.help:
         rest.append("-h")
         firewalls = []
@@ -127,6 +132,7 @@ def read_root_args(
         creds = read_cred_args(args)
         firewalls = read_firewall_inventory(args, creds)
 
+    # Call handler for the users action
     if args.command:
         action = "command"
     elif args.query:

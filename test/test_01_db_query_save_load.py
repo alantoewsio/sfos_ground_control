@@ -1,7 +1,11 @@
+"""_summary_
+"""
+
 from sfos.db import Select
 
 
 def test_select_all_dict() -> None:
+    """_summary_"""
     # time.sleep(1)
     t_sel_8 = Select(from_table="tablename")
 
@@ -19,6 +23,7 @@ def test_select_all_dict() -> None:
 
 
 def test_save_and_load() -> None:
+    """_summary_"""
     e_sql_9 = "SELECT colA, colB, colC FROM tablename WHERE colA is not ? AND colB = ?"
     e_params_9 = ["test value", "test value 2"]
     c_dict_9 = {

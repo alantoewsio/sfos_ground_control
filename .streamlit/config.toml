@@ -1,0 +1,26 @@
+[theme]
+# Darkest Blue: #091948
+# Dark Blue: #152978
+# Blue: #284eb7
+
+# Primary accent color for interactive elements
+primaryColor = "#091948"
+
+# Background color for main content area
+backgroundColor = "#284eb7"
+
+# Background color for sidebar and interactive widgets
+secondaryBackgroundColor = "#152978"
+
+# Color used for most text
+textColor = "#fff"
+font="sans serif"
+
+base="light"
+
+[client]
+showErrorDetails = true
+toolbarMode = "viewer"
+
+[browser]
+gatherUsageStats = false

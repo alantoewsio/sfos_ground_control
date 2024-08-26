@@ -10,16 +10,17 @@ License.
 """
 
 __all__ = [
-    "run_command",
-    "run_command_refresh",
+    "run_cli_command",
     "run_query",
     "run_scripts",
 ]
 
-from sfos.agent.actions.command import run_command
+from sfos.agent.actions.command import run_cli_command
 from sfos.agent.actions.query import run_query
 from sfos.agent.actions.script import run_scripts
 
 
 def run_noop() -> None:
+    """_summary_
+    """
     print("No-op executed flawlessly")

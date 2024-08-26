@@ -9,6 +9,7 @@ the License for the specific language governing permissions and limitations unde
 License.
 """
 
+# pylint: disable=broad-exception-caught
 import json
 import os as _os
 import re as _re

@@ -14,12 +14,11 @@ sfos.static
 """
 
 __all__ = [
-    "run_command",
+    "run_cli_command",
     "run_query",
     "init_cli",
     "read_root_args",
     "db",
-    "GroundControlDB",
     "start_agent",
     "Script",
     "ScriptItem",
@@ -27,7 +26,7 @@ __all__ = [
     "execute_script",
 ]
 
-from sfos.agent.actions import run_command, run_query
+from sfos.agent.actions import run_cli_command, run_query
 from sfos.agent.cli_args import init_cli, read_root_args
 
 

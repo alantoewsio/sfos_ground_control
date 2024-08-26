@@ -13,16 +13,24 @@ import argparse as _args
 import prettytable
 
 from sfos.base import GroundControlDB as _db
-from sfos.logging.logging import trace_calls, Level
+from sfos.logging.logging import Level
 
 
-@trace_calls(Level.DEBUG, False, False)
 def run_query(
     args: _args.Namespace,
     db: _db,
     print_results: bool = True,
 ) -> list:
+    """_summary_
 
+    Args:
+        args (_args.Namespace): _description_
+        db (_db): _description_
+        print_results (bool, optional): _description_. Defaults to True.
+
+    Returns:
+        list: _description_
+    """
     results = []
 
     for file in args.filename:

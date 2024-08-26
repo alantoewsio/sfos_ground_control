@@ -8,11 +8,12 @@ BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 the License for the specific language governing permissions and limitations under the
 License.
 """
-
+# pylint: disable=broad-exception-caught_
 from sfos import agent as _agent
 
 
 def main() -> None:
+    """Main agent startup"""
     _agent.start_agent()
 
 

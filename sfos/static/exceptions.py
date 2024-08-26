@@ -34,15 +34,15 @@ class AgentError(Exception):
         self.message = json.dumps(kwargs)
 
 
-class ConnectionError(AgentError):
+class AgentConnectionError(AgentError):
     """Firewall login failed"""
 
 
-class ConnectionTimeoutError(ConnectionError):
+class ConnectionTimeoutError(AgentConnectionError):
     """Firewall login failed"""
 
 
-class NameResolutionError(ConnectionError):
+class NameResolutionError(AgentConnectionError):
     """Firewall login failed"""
 
 
@@ -70,6 +70,10 @@ class ProcessorError(AgentError):
     """Root error class for all module exceptions"""
 
 
+class JSONError(ProcessorError):
+    """Root error class for all module exceptions"""
+
+
 class ArgumentError(ProcessorError):
     """Raised when an illogical combination of arguments is provided"""
 
@@ -79,15 +83,19 @@ class ArgumentValueError(ProcessorError):
 
 
 class IndexMatchError(ProcessorError):
-    pass
+    """Error matching expected tokens in index.jsp"""
 
 
 class IndexParserError(ProcessorError):
-    pass
+    """Error parsing index.jsp contents"""
 
 
 class OperatorError(ProcessorError):
-    pass
+    """Error performing operation"""
+
+
+class ResponseContentError(ProcessorError):
+    """A SfosResponse object does not contain the expected response data"""
 
 
 class NoMatchFound(ProcessorError):
@@ -117,3 +125,7 @@ class NotConfigured(ProcessorError):
 
 class DefinitionNotFound(AgentError):
     """Definition file cannot be found in specified paths"""
+
+
+class DatabaseError(AgentError):
+    """A general error for interactions with app database"""

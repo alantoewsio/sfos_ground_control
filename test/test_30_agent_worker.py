@@ -37,7 +37,7 @@ def t_db(dbname: str):
 def fwinfo_good() -> dict:
     return {
         "address": "test.firewall.1",
-        "Model": "SFVUNL",
+        "model": "SFVUNL",
         "displayVersion": "19.5 MR-3",
         "version": "19.5.3.100",
         "serial_number": "X123456789012",
@@ -52,7 +52,7 @@ def fwinfo_good() -> dict:
 def fwinfo_bad() -> dict:
     return {
         "address": "test.firewall.2",
-        "Model": None,
+        "model": None,
         "displayVersion": None,
         "version": None,
         "serial_number": None,

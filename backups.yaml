@@ -1,6 +1,0 @@
-- hostname: boston.toews.io
-  password: Sophos=111
-  verify_tls: False
-- hostname: 10.5.2.80
-  password: Sophos=111
-  verify_tls: False

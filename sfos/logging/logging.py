@@ -1,13 +1,27 @@
+""" SFOS Ground Control
+Copyright 2024 Sophos Ltd.  All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+file except in compliance with the License.You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed
+to in writing, software distributed under the License is distributed on an "AS IS"
+BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+the License for the specific language governing permissions and limitations under the
+License.
+"""
+
+# pylint: disable=broad-exception-caught
 from __future__ import annotations
+
 
 import inspect
 import json
 import logging
 import os
 
-from datetime import datetime
+from datetime import datetime, UTC
 from logging.handlers import RotatingFileHandler
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, TypeAlias
+from attr import dataclass
 from typing_extensions import ParamSpec
 
 from sfos.static import Level, constants as _c
@@ -16,22 +30,41 @@ from sfos.logging.methods import resp2dict
 # Generics for decorators
 P = ParamSpec("P")
 R = TypeVar("R")
+MessageType: TypeAlias = str | list|object|Level
+
+@dataclass
+class State:
+    """Global variables"""
+    init_called: bool = False
+    timers: dict = {}
 
 
-log_path = "./logs"
-log_file: str = os.path.join(log_path, "application.log")
-_init_called = False
+logstate = State()
 
+LOG_PATH = "./logs"
+LOG_FILENAME = "application.log"
+
+INIT_CALLED = False
+# FrameInfo tuple value position indexes
+FI_FRAME = 0
+FI_FILENAME = 1
+FI_LINENO = 2
+FI_FUNCTION = 3
+FI_CODE_CONTEXT = 4
+IF_INDEX = 5
 
 def caller_name(stacklevel: int = 1) -> str:
+    """Get the name of the calling function"""
     stacklevel += 1
     return inspect.stack()[stacklevel][3]
 
 
 def init_logging(level: Level):
-    global log_path, log_file, _init_called
-    if not os.path.exists(log_path):
-        os.makedirs(log_path)
+    """Initialize logging"""
+    # global LOG_PATH, log_file, INIT_CALLED
+    if not os.path.exists(LOG_PATH):
+        os.makedirs(LOG_PATH)
+    log_file = os.path.join(LOG_PATH, LOG_FILENAME)
     file_handler = RotatingFileHandler(log_file, maxBytes=20 * _c.MB, backupCount=5)
 
     logging.addLevelName(5, "TRACE")
@@ -42,102 +75,147 @@ def init_logging(level: Level):
         handlers=[file_handler],
     )
     logging.log(level.value, "Logging Initialized")
-    _init_called = True
+    logstate.init_called = True
 
 
 def mimic_paramspec(copy_from: Callable[P, R]) -> None:
+    """Decorator to mimic another function's type hints"""
     if copy_from:
         pass
 
     def _decorate(fn: Callable) -> Callable[P, R]:
         def _wrap(*args, **kwargs):
             return fn(*args, **kwargs)
-
-        return _wrap
-
-    return _decorate
+        return _wrap  # type: ignore
+    return _decorate  # type: ignore
 
 
-def trace(
+def logtrace(
+    *messages: MessageType,
+    stacklevel: int = 1,
+    **kwargs: str | int | list | bool | None,
+) -> None | Exception | object:
+    """Write a trace log entry
+
+    Args:
+        stacklevel (int, optional): _description_. Defaults to 1.
+
+    Returns:
+        None | Exception | object: _description_
+    """
+    return log(*messages,level=Level.TRACE, stacklevel=stacklevel + 1, **kwargs)
+
+
+def logdebug(
     *messages: str | list,
     stacklevel: int = 1,
-    **kwargs: str | int | list,
+    **kwargs: str | int | list | bool | None,
 ) -> None | Exception | object:
-    return log(Level.TRACE, *messages, stacklevel=stacklevel + 1, **kwargs)
+    """Write a debug log entry
+
+    Args:
+        stacklevel (int, optional): _description_. Defaults to 1.
+
+    Returns:
+        None | Exception | object: _description_
+    """
+    return log(*messages,level=Level.DEBUG, stacklevel=stacklevel + 1, **kwargs)
 
 
-def debug(
-    *messages: str | list,
+def logerror(
+    *messages: MessageType,
     stacklevel: int = 1,
-    **kwargs: str | int | list,
+    **kwargs: str | int | list | bool | None,
 ) -> None | Exception | object:
-    return log(Level.DEBUG, *messages, stacklevel=stacklevel + 1, **kwargs)
+    """Write an error log entry"""
+    return log( *messages,level=Level.ERROR, stacklevel=stacklevel + 1, **kwargs)
 
 
-def error(
-    *messages: str | list | object,
+def loginfo(
+    *messages: MessageType,
     stacklevel: int = 1,
-    **kwargs: str | int | list,
+    **kwargs: str | int | list | bool | None,
 ) -> None | Exception | object:
+    """Write an info log entry
 
-    return log(Level.ERROR, *messages, stacklevel=stacklevel + 1, **kwargs)
+    Args:
+        stacklevel (int, optional): _description_. Defaults to 1.
 
-
-def info(
-    *messages: str | list,
-    stacklevel: int = 1,
-    **kwargs: str | int | list,
-) -> None | Exception | object:
-    return log(Level.INFO, *messages, stacklevel=stacklevel + 1, **kwargs)
+    Returns:
+        None | Exception | object: _description_
+    """
+    return log(*messages,level=Level.INFO,  stacklevel=stacklevel + 1, **kwargs)
 
 
 def log(
-    level: Level = Level.DEBUG,
-    *messages: str | list,
+    *messages: MessageType,
     stacklevel: int = 1,
-    **kwargs: str | int | list,
+    level: Level = Level.DEBUG,
+    **kwargs: str | int | list | bool | None,
 ) -> None | Exception | object:
-    global _init_called
-    if level == Level.NONE or not _init_called:
+    """Write a log entry
+
+    Args:
+        level (Level, optional): _description_. Defaults to Level.DEBUG.
+        stacklevel (int, optional): _description_. Defaults to 1.
+
+    Returns:
+        None | Exception | object: _description_
+    """
+    msgs =[]
+    
+    for itm in messages:
+        if isinstance(itm,Level):
+            level = itm
+        else:
+            msgs.append(itm)
+
+    if level == Level.NONE or not logstate.init_called:
         return
     level = Level.DEBUG if level is None else level
     ret_obj = None
     ret_error = None
     idx = 0
-    for item in messages:
+    for item in msgs:
         if isinstance(item, Exception):
             ret_error = item
             break
-        elif hasattr(item, "error") and isinstance(item.error, Exception):
-            ret_error = item.error
+        elif hasattr(item, "error") and isinstance(item.error, Exception):  # type: ignore
+            ret_error = item.error  # type: ignore
             ret_obj = item
             break
         idx += 1
     if ret_obj:
         if hasattr(ret_obj, "trace"):
-            kwargs["trace"] = ret_obj.trace
+            kwargs["trace"] = ret_obj.trace  # type: ignore
         if hasattr(ret_obj, "success"):
-            kwargs["success"] = ret_obj.success
-        if hasattr(ret_obj, "fw") and ret_obj.fw is not None:
-            kwargs["host"] = ret_obj.fw.address.hostname
-            kwargs["port"] = ret_obj.fw.address.port
-            kwargs["verify_tls"] = ret_obj.fw.address.verify_tls
+            kwargs["success"] = ret_obj.success  # type: ignore
+        if hasattr(ret_obj, "fw") and ret_obj.fw is not None:  # type: ignore
+            kwargs["host"] = ret_obj.fw.address.hostname  # type: ignore
+            kwargs["port"] = ret_obj.fw.address.port  # type: ignore
+            kwargs["verify_tls"] = ret_obj.fw.address.verify_tls  # type: ignore
         if hasattr(ret_obj, "message"):
-            kwargs["msg"] = ret_obj.message
+            kwargs["msg"] = ret_obj.message  # type: ignore
         if hasattr(ret_obj, "timer"):
-            kwargs["timer"] = ret_obj.timer
+            kwargs["timer"] = ret_obj.timer  # type: ignore
         if level == Level.TRACE:
-            if hasattr(ret_obj, "response") and ret_obj.response is not None:
-                kwargs["response"] = json.dumps(resp2dict(ret_obj.response))
+            if hasattr(ret_obj,
+                       "response",
+                       ) and ret_obj.response is not None:  # type: ignore
+                kwargs["response"] = json.dumps(
+                            resp2dict(ret_obj.response) # type: ignore
+                        )  
 
-    positional_args = (
-        [message for message in messages if isinstance(message, str)]
-        if messages
-        else []
-    )
-    kw_args = [f'{key}="{str(value)}"' for key, value in kwargs.items()]
-    message = positional_args
-    message.extend(kw_args)
+    # positional_args = (
+    #     [msg for msg in msgs if isinstance(message, str)]
+    #     if msgs
+    #     else []
+    # )
+    
+    # kw_args = [f'{key}="{str(value)}"' if not isinstance(value,Callable) else ""  for key, value in kwargs.items()]
+    # message = positional_args
+    # message.extend(kw_args)
+    message = ""
     if ret_error:
         logging.exception(ret_error, stacklevel=stacklevel + 1)
     else:
@@ -146,60 +224,53 @@ def log(
     return ret_obj if ret_obj else ret_error if ret_error else None
 
 
-def trace_calls(
-    level: Level = Level.TRACE, log_args: bool = False, log_return: bool = False
-) -> None:
-    def _decorate(fn: Callable[P, R]) -> Callable[P, R]:
-        fnname = fn.__name__
-        sig = str(inspect.signature(fn))
-        class_fn = "self" in sig
+def log_callstart(
+    level: Level = Level.TRACE,
+    verbose: bool = False,
+    stacklevel: int = 1,
+):
+    """Log information about the function call and the timestapm of the call
 
-        def _wrap(*args, **kwargs):
-            log(
-                level,
-                "<<pre>>",
-                call_args=str(args) if log_args else len(args),
-                call_kwargs=str(kwargs) if log_args else len(kwargs),
-                stacklevel=2,
-            )
-            tstart = datetime.now()
-            try:
-                _ex = None
-                this = fn
-                if class_fn:
-                    this = getattr(args[0], fnname)
-                    args = list(args)
-                    args.pop(0)
-                    print("calling", this.__name__, "args", args)
+    Args:
+        level (Level, optional): _description_. Defaults to Level.TRACE.
+        verbose (bool, optional): _description_. Defaults to False.
+        stacklevel (int, optional): _description_. Defaults to 1.
+    """
+    
+    current_frame = inspect.currentframe()
+    frames = inspect.getouterframes(frame=current_frame)
+    
+    # FrameInfo(frame, filename, lineno, function, code_context, in dex) is returned.
+    ancestry: list[str] = []
+    for f in frames:
+        ancestry.append(f[FI_FUNCTION])
 
-                result = this(*args, **kwargs)
-                has_return = result is not None
-                ret_type = f' type="{type(result)}'
-                ret_value = f' value="{result}"' if log_return else ""
+    caller = frames[-2]
+    caller_args = inspect.getargvalues(caller[FI_FRAME])
+    
+    arg_dict = caller_args.__dict__
+    args=[f"arg_{k}{f"='{v}'" if verbose else str(type(v))}" for k,v in arg_dict.items()]
+    logstate.timers[caller[FI_FUNCTION]] = datetime.now(tz=UTC)
+    log(level=level,args=args,verbose=verbose, stacklevel=stacklevel + 1)
 
-            except Exception as e:
-                _ex = e
-                has_return = False
-                ret_type = f' type="{type(e)}'
-                ret_value = f' exception="{str(e)}"'
-            finally:
-                timer = (
-                    f' time="{int((datetime.now() - tstart).microseconds / 1000)} ms"'
-                )
-                log(
-                    level,
-                    "<<post>>",
-                    timer=timer,
-                    has_return=has_return,
-                    raised_exception=str(type(_ex)) if _ex else "",
-                    ret_type=ret_type,
-                    ret_value=ret_value,
-                    stacklevel=2,
-                )
-                if _ex:
-                    raise _ex
-            return result
+def log_calldone(level: Level = Level.TRACE,    
+    verbose: bool = False,
+    stacklevel: int = 1,**kwargs
+):
+    """log info about the call near its completion, and log the time taken in ms if 
+    log_callstart was called earlier
 
-        return _wrap
+    Args:
+        level (Level, optional): _description_. Defaults to Level.TRACE.
+        verbose (bool, optional): _description_. Defaults to False.
+        stacklevel (int, optional): _description_. Defaults to 1.
+    """
+    frames = inspect.getouterframes(1, context=1)
+    caller = frames[-2]
+    timer = -1
+    if caller[FI_FUNCTION] in logstate.timers:
+        timer = (datetime.now - logstate.timers[caller[FI_FUNCTION]]).total_seconds()*1000
+        del logstate.timers[caller[FI_FUNCTION]]
 
-    return _decorate
+    timer = f"{timer:f}ms" if timer>=0 else "-"
+    log(level=level,verbose=verbose, timer=timer, stacklevel=stacklevel+1,**kwargs)

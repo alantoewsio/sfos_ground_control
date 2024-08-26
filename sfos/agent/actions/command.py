@@ -10,56 +10,68 @@ License.
 """
 
 import argparse as _args
-import prettytable
-
+from datetime import datetime
 
 from sfos.agent.script_objs import ScriptItem, execute_script_item
 from sfos.base import GroundControlDB as _db
+from sfos.static import exceptions as _ex
+from sfos.logging.logging import loginfo
 from sfos.webadmin.connector import Connector as _conn, SfosResponse as _sresp
-from sfos.logging.logging import trace_calls, Level
 
 
-@trace_calls(Level.INFO, False, False)
-def run_command(
+def run_cli_command(
     firewalls: list[_conn],
     args: _args.Namespace,
     state: dict | None = None,
     db: _db | None = None,
-    print_results: bool = True,
 ) -> list[_sresp]:
+    """Run a command passed via the cli
+
+    Args:
+        firewalls (list[_conn]): _description_
+        args (_args.Namespace): _description_
+        state (dict | None, optional): _description_. Defaults to None.
+        db (_db | None, optional): _description_. Defaults to None.
+        print_results (bool, optional): _description_. Defaults to True.
+
+    Returns:
+        list[_sresp]: _description_
+    """
     if args.command == "refresh":
         results = [run_command_refresh(fw, db) for fw in firewalls]
-        if print_results:
-            query = db.query_inventory_status()
-            records = query.get_cursor()
-            table = prettytable.from_db_cursor(records)
-            print(table)
-        return [results]
+        return results
     else:
-        print("run_command_def args=", args)
-        return [
-            run_command_def(fw, args.command, args.object, args.data, state)
-            for fw in firewalls
-        ]
+        loginfo("run_command_def args=", args=args)  # type: ignore
+        results = []
+        for fw in firewalls:
+            results.extend(
+                run_command_def(
+                    fw,
+                    args.command,
+                    args.object,
+                    args.data,
+                    state,
+                )
+            )
+        return results
 
 
 def run_command_refresh(fw: _conn, db: _db | None = None) -> _sresp:
-    msg = f"fetching info from {fw.address.address}.."
-    print(msg, end="\r")
-    sfos_resp = fw.get_info()
-    print(" " * len(msg), end="\r")
-    db.add_or_update_inventory(fw, sfos_resp)
-    db.add_or_update_license(sfos_resp)
+    """Run a refresh command against the selected firewal"""
+    if not db:
+        return _sresp(
+            error=_ex.DatabaseError(("No database")),
+            trace="rcr-01",
+        )
 
-    return _sresp(
-        fw=fw,
-        request=sfos_resp.request,
-        response=sfos_resp.response,
-        error=sfos_resp.error,
-        data=sfos_resp.data,
-        timer=sfos_resp.timer,
-        traceval="101",
-    )
+    msg = f"fetching info from {fw.address.address}.."  # type: ignore
+    loginfo(msg, end="\r")
+    sfos_resp = fw.get_info()
+    loginfo(" " * len(msg), end="\r")
+
+    db.insert_or_update_fwinfo(sfos_resp)
+    sfos_resp.trace = "101"
+    return sfos_resp
 
 
 def run_command_def(
@@ -69,5 +81,20 @@ def run_command_def(
     data: str | None = None,
     state: dict | None = None,
 ) -> list[_sresp]:
+    """Run a command or command script against a firewall connection
+
+    Args:
+        fw (_conn): _description_
+        command (str): _description_
+        request_object (str | None, optional): _description_. Defaults to None.
+        data (str | None, optional): _description_. Defaults to None.
+        state (dict | None, optional): _description_. Defaults to None.
+
+    Returns:
+        list[_sresp]: _description_
+    """
+    if state:
+        pass  # not implemented yet
+
     cmd = ScriptItem(command, request_object, data)
     return execute_script_item(fw, cmd)

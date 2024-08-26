@@ -20,11 +20,11 @@ __all__ = [
     "SfosMode",
     "SfosOperation",
     "AgentError",
-    "ConnectionError",
+    "AgentConnectionError",
     "ProcessorError",
 ]
 
 from sfos.static.aliases import QueryOperators, QuerySources
 from sfos.static.constants import DATE_FMT, DATE_TIME_FMT
 from sfos.static.enums import Level, SfosMode, SfosOperation
-from sfos.static.exceptions import AgentError, ConnectionError, ProcessorError
+from sfos.static.exceptions import AgentError, AgentConnectionError, ProcessorError

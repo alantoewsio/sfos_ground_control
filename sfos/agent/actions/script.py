@@ -8,6 +8,7 @@ BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 the License for the specific language governing permissions and limitations under the
 License.
 """
+# pylint: disable=broad-exception-caught
 
 import argparse as _args
 from sfos.agent.script_objs import load_script, execute_script
@@ -25,7 +26,7 @@ def run_scripts(firewalls: list[_conn], args: _args.Namespace) -> list[dict]:
 def _script_do_run(fw: _conn, filename: str, state: dict | None = None) -> dict:
     try:
         scr = load_script(filename)
-        result = execute_script(fw, scr, state)
+        result = execute_script(fw, scr)
         return {"fw": fw.address, "script": filename, "results": result}
     except Exception as e:
         print("run_script error: ", type(e), str(e), "file:", filename)

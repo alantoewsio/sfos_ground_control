@@ -10,93 +10,37 @@ License.
 """
 
 from sfos.base.db import GroundControlDB as _db
+from sfos.base.db import instance
 from sfos.logging.logging import log, Level
 from sfos.static import DATE_TIME_FMT as _DATE_FMT
 
-db = _db()
-
-
-fwinfo_table = [
-    "address",
-    "Model",
-    "displayVersion",
-    "version",
-    "serial_number",
-    "companyName",
-    "username",
-    "verify_tls",
-    "message",
-]
-
-fwsubs_table = [
-    "serial_number",
-    "name",
-    "start",
-    "end",
-    "timeframe",
-]
-
 
 def init_db(filename: str | None = None) -> _db:
-    global db
-    db = None
+    """Ensure the database file exists, and that it is properly initialized
+
+    Args:
+        filename (str | None, optional): _description_. Defaults to None.
+
+    Returns:
+        _db: _description_
+    """
+    instance.db = None
     if filename:
         log(Level.INFO, f"Initializing db '{filename}'")
-        db = _db(filename)
+        instance.db = _db(filename)
     else:
-        db = _db()
-        log(Level.INFO, f"Initialized db '{db.filename}'")
-    assert db  # GroundControlDB class is instantiated successfully
+        instance.db = _db()
+        log(Level.INFO, f"Initialized db '{instance.db.filename}'")
+    assert instance.db  # GroundControlDB class is instantiated successfully
+    init_scripts = ["init_tables.sql", "init_views.sql", "init_views.sql"]
+    init_scripts_sql = [instance.db.load_sql_from_file("init_tables.sql")]
 
-    if db.create_db():
-        log(Level.INFO, f"New GroundControl database created: '{db.filename}'")
-
-    if "inventory" not in db.list_tables():
-        cols = {
-            "address": "TEXT UNIQUE",
-            "Model": "TEXT",
-            "displayVersion": "TEXT",
-            "version": "TEXT",
-            "serial_number": "TEXT",
-            "companyName": "TEXT",
-            "username": "TEXT",
-            "verify_tls": "TEXT",
-            "message": "TEXT",
-            "last_result": "TEXT DEFAULT ''",
-            "consecutive_fails": "INTEGER DEFAULT 0",
-            "reply_ms": "INTEGER DEFAULT -1",
-            "added": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-            "updated": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-            "last_seen": "TIMESTAMP DEFAULT NULL",
-        }
-        db.create_table("inventory", **cols)
-
-    if "licenses" not in db.list_tables():
-        cols = {
-            "uid": "TEXT UNIQUE",
-            "serial_number": "TEXT",
-            "name": "TEXT",
-            "start_date": "TIMESTAMP DEFAULT NULL",
-            "expiry_date": "TIMESTAMP DEFAULT NULL",
-            "bundle": "TEXT DEFAULT ''",
-            "status": "TEXT DEFAULT ''",
-            "deactivation_reason": "TEXT DEFAULT ''",
-            "type": "TEXT DEFAULT ''",
-            "added": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-            "updated": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-        }
-        db.create_table("licenses", **cols)
-        status_view = (
-            "CREATE VIEW IF NOT EXISTS InventoryStatus AS "
-            "SELECT address as Address, serial_number as 'Serial Number', "
-            "model as Model, displayVersion as Version,companyName as Company, "
-            "message as 'Error Message',last_result as Status,"
-            f"strftime('{_DATE_FMT}', last_seen) as 'Last Seen', "
-            "CAST (strftime('%j',current_timestamp) - strftime('%j',last_seen) AS INT) "
-            "as 'Days Ago' "
-            "WHERE 'Days Ago' > 90 "
-            "ORDER BY last_result ASC, address"
+    if instance.db.create_db(init_scripts_sql):
+        log(
+            Level.INFO,
+            action="init_db",
+            files=init_scripts,
+            database=instance.db.filename,
         )
-        db.execute(status_view)
 
-    return db
+    return instance.db

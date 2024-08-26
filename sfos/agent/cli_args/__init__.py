@@ -12,11 +12,11 @@ License.
 __all__ = [
     "init_cli",
     "Parsers",
-    "_root",
-    "_command",
-    "_query",
-    "_report",
-    "_script",
+    "APRoot",
+    "APCommand",
+    "APQuery",
+    "APReport",
+    "APScript",
     "read_root_args",
 ]
 
@@ -24,9 +24,9 @@ from sfos.agent.cli_args.startup import (
     init_cli,
     read_root_args,
     Parsers,
-    _root,
-    _command,
-    _query,
-    _report,
-    _script,
+    APRoot,
+    APCommand,
+    APQuery,
+    APReport,
+    APScript,
 )

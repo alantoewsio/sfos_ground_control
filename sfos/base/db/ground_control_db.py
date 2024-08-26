@@ -11,81 +11,156 @@ License.
 
 import os
 from datetime import datetime
+import sqlite3
 
+from sfos.objects.firewall_info import FirewallInfo
 from sfos.static import exceptions as _ex
 from sfos.db import Database
 from sfos.static import DATE_TIME_FMT as _DATE_TIME_FMT
-from sfos.webadmin.connector import Connector, SfosResponse as _sresp
+from sfos.webadmin.connector import Connector as _conn, SfosResponse as _sresp
+from sfos.logging import logtrace, logerror
 
 
 class GroundControlDB(Database):
+    """A Database instance tailored for this application
+
+    Args:
+        Database (_type_): _description_
+    """
 
     def __init__(self, filename: str | None = None):
         if not filename:
             filename = os.getenv("GROUND_CONTROL_DB_KEY", "./ground_control.sqlite3")
         super().__init__(filename)
 
-    def add_or_update_license(self, sfos_response: _sresp) -> None:
-        if not sfos_response.success:
-            return
-        fwi = sfos_response.data
+    def _prep_resp_for_inventory_update(self, sresp: _sresp) -> dict:
+        """Format a dictionary with the firewall inventory info
+        extracted from a SfosResponse"""
+
+        success = sresp.success
+        resp = getattr(sresp.data, "base_info", {})
+        if success:
+            last_result = "ONLINE"
+        else:
+            match type(sresp.error):
+                case _ex.ConnectionTimeoutError:
+                    last_result = "OFFLINE"
+                case _ex.NameResolutionError:
+                    last_result = "OFFLINE"
+                case _:
+                    last_result = "ERROR"
+        data = {
+            "address": sresp.fw.address.hostname,  # type: ignore
+            "model": resp["Model"] if success else None,
+            "displayVersion": resp["displayVersion"] if success else None,
+            "version": resp["version"] if success else None,
+            "serial_number": resp["serial_number"] if success else None,
+            "companyName": resp["companyName"] if success else None,
+            "username": resp["username"] if success else None,
+            "verify_tls": sresp.fw.address.verify_tls,  # type: ignore
+            "message": "" if success else sresp.text,
+            "last_result": last_result,
+            "consecutive_fails": 0,
+            "reply_ms": sresp.timer if success else None,
+            "updated": datetime.now().isoformat(),
+            "last_seen": datetime.now().isoformat() if success else None,
+        }
+        return data
+
+    def _prep_resp_for_license_update(self, sresp: _sresp) -> list[dict]:
+        """Add a new license record to the database or updte an existing one
+
+        Args:
+            sresponse (_sresp): _description_
+        """
+        if not sresp.success:
+            raise _ex.ResponseContentError("No license data in response")
+
+        fwi = sresp.data
+        assert isinstance(fwi, FirewallInfo)
         fw_license = fwi.get_license()
         entitlements = fw_license.__dict__()
 
         for sub in entitlements:
             sub["uid"] = sub["serial_number"] + sub["name"]
             sub["updated"] = datetime.now()
-            self.partial_update("licenses", ["serial_number", "name"], **sub)
 
-    def add_or_update_inventory(self, fw: Connector, sfos_resp: _sresp) -> None:
-        data = {}
-        if sfos_resp.success:
-            data = sfos_resp.data.base_info
-            data["last_result"] = "ONLINE"
-            data["last_seen"] = datetime.now()
-            data["message"] = ""
-            data["consecutive_fails"] = 0
+        return entitlements
+
+    def load_sql_from_file(
+        self, filename: str, path: str = "sfos/base/db/sql/", default: str | None = None
+    ) -> str | None:
+        """Load the contents of a .sql file from 'path' folder.
+
+        Args:
+            filename (str): Filename of the sql file to load
+            path (str, optional): Location to look for the file.
+                                  Defaults to "sfos/base/db/sql/".
+            default (str, optional): If the sql file does not exist,
+                                    'default' wil be returned.
+                                     Defaults to None.
+
+        Returns:
+            str: _description_
+        """
+        return super().load_sql_from_file(filename=filename, path=path, default=default)
+
+    def insert_or_update_fwinfo(self, response: _sresp):
+        """Attempt to insert an inventory record, and update the inventory if it
+
+        Args:
+            data (dict): _description_
+            success (bool, optional): _description_. Defaults to True.
+        """
+        # if not response.data.base_info:
+        #     raise _ex.ResponseContentError(
+        #         "Response does not contain FirewallInfo data. Cannot save results in db"
+        #     )
+
+        hostname = "NONE"
+        try:
+            assert isinstance(response.fw, _conn)
+            if response.fw.address:
+                hostname = response.fw.address.hostname
+        finally:
+            logtrace(
+                host=hostname,
+                response_success=response.success,
+                response_error=response.error,  # type: ignore
+                status_code=response.status_code,
+            )
+        inv_data = self._prep_resp_for_inventory_update(response)
+        self.insert_or_update(
+            insert_into="inventory",
+            data=inv_data,
+            on_conflict=["address"],
+            increment=None if response.success else ["consecutive_fails"],
+        )
+        if response.success:
+            lic_subs_data = self._prep_resp_for_license_update(response)
+            for lic_data in lic_subs_data:
+                try:
+                    self.insert_or_update(
+                        insert_into="licenses", data=lic_data, on_conflict=["uid"]
+                    )
+                except sqlite3.OperationalError as e:
+                    logerror(error=str(e))
+                except sqlite3.ProgrammingError as e:
+
+                    logerror(error=str(e))
 
         else:
-            data = {}
-            match type(sfos_resp.error):
-                case _ex.ConnectionTimeoutError:
-                    data["last_result"] = "OFFLINE"
-                case _ex.NameResolutionError:
-                    data["last_result"] = "OFFLINE"
-                case _:
-                    data["last_result"] = "ERROR"
+            logtrace("Skipping license import for ")
 
-            data["message"] = sfos_resp.text
-            data["consecutive_fails"] = "<INCREMENT>"
+        return
 
-        data["address"] = fw.address.hostname
-        data["reply_ms"] = sfos_resp.timer
-        data["updated"] = datetime.now()
-        self._add_or_update_inventory(data)
+    def get_inventory_status_query(self):
+        """Called by command.py after refresh completes
+        - this should be removed and switch to using query defined in qsl file
 
-    def _add_or_update_inventory(self, data: dict):
-        self.partial_update("inventory", "address", **data)
-
-    def query_inventory_status(self):
-        return (
-            self.select(
-                "address as Address",
-                "serial_number as 'Serial Number'",
-                "model as Model",
-                "displayVersion as Version",
-                "companyName as Company",
-                "message as 'Error Message'",
-                "last_result as Status",
-                f"strftime('{_DATE_TIME_FMT}', last_seen) as 'Last Seen Date' ",
-                (
-                    "CAST ("
-                    "strftime('%j',current_timestamp) - "
-                    "strftime('%j',last_seen) "
-                    "AS INT) as 'Days Ago' "
-                ),
-                from_table="inventory",
-            )
-            .order_by("'Last Seen Date'", ascending=False, nulls_first=False)
-            .order_by("Status")
-        )
+        Returns:
+            _type_: _description_
+        """
+        sql = self.load_sql_from_file("inventory_insert_or_replace.sql")
+        return self.select(raw_sql=sql)
+        # return self.select(from_table="inventory_view")

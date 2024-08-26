@@ -1,3 +1,15 @@
+""" SFOS Ground Control
+Copyright 2024 Sophos Ltd.  All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+file except in compliance with the License.You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed
+to in writing, software distributed under the License is distributed on an "AS IS"
+BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+the License for the specific language governing permissions and limitations under the
+License.
+"""
+
+# pylint: disable=broad-exception-caught
 import json
 from datetime import datetime, UTC
 from requests import Response as _response
@@ -5,15 +17,15 @@ from requests.utils import dict_from_cookiejar as _dict_from_cookiejar
 from typing import Any
 
 from sfos.objects.firewall_info import FirewallInfo as _fwi
-from sfos.logging import trace
 
 
 class SfosResponse:
+    """Response from a call to SFOS WebAdmin"""
 
     def __init__(
         self,
         *,
-        traceval: str,
+        trace: str,
         fw: Any | None = None,
         request: Any | None = None,
         response: _response | None = None,
@@ -31,19 +43,18 @@ class SfosResponse:
         self.timestamp = str(datetime.now(tz=UTC))
         self.text = None
         self.success = None
-        self.trace = traceval
+        self.trace = trace
         self.timer = timer
         if self.error:
             self.success = success if success else False
             self.text = str(error)
-            if hasattr(self.error, "response"):
-                self.response = self.error.response
+            self.response = getattr(self.error, "response", None)
 
         elif self.response:
             self.success = (
                 success if success else self.response.status_code in range(200, 300)
             )
-            self.text = response.text if response.text else ""
+            self.text = getattr(response, "text", "")
             if data:
                 self.data = data
             else:
@@ -55,17 +66,15 @@ class SfosResponse:
             self.success = success if success else True
             self.data = data
 
-        trace()
-
-    @property
-    def __dict__(self) -> dict:
+    # @property
+    def __dict__(self) -> dict:  # type: ignore
         if isinstance(self.data, _fwi):
             data = self.data.base_info
         else:
             data = self.data
         return {
             "success": self.success,
-            "host": self.fw.address,
+            "host": getattr(self.fw, "address", ""),
             "status": self.status_code,
             "timestamp": self.timestamp,
             "has_error": self.error is not None,
@@ -79,16 +88,25 @@ class SfosResponse:
     def __json__(self) -> dict:
         return {"SfosResponse": self.__dict__}
 
-    @property
+    # @property
     def __repr__(self) -> str:
         return json.dumps(self.__json__())
 
-    @property
+    # @property
     def __str__(self) -> str:
-        self.__repr__
+        return str(self.__repr__)
 
 
 def resp2dict(response: _response, _root: bool = True):
+    """_summary_
+
+    Args:
+        response (_response): _description_
+        _root (bool, optional): _description_. Defaults to True.
+
+    Returns:
+        _type_: _description_
+    """
     response_dict = {}
     try:
         response_dict = {

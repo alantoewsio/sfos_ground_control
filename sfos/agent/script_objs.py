@@ -8,7 +8,7 @@ BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 the License for the specific language governing permissions and limitations under the
 License.
 """
-
+# pylint: disable=broad-exception-caught
 from sfos.agent.methods import (
     load_json_data as _load_json,
 )
@@ -23,6 +23,7 @@ from sfos.webadmin import (
 
 
 class ScriptItem(_cdict):
+    """Script item class"""
     def __init__(
         self,
         command: str | _req_mode,

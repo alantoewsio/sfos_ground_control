@@ -14,28 +14,37 @@ import json
 import re as _re
 
 from datetime import datetime
-from pydantic import BaseModel
 from typing import Literal
+from pydantic import BaseModel
 
 from sfos.static import constants as _c, exceptions as _ex, patterns as _p, DATE_FMT
 
 
 class FirewallInfo(BaseModel):
-    csrf_token: str | None = None
-    displayModel: str | None = None
-    displayVersion: str | None = None
-    version: str | None = None
-    subscriptions: str | None = None
-    applianceKey: str | None = None
-    isOEMdevice: str | None = None
-    loginUserName: str | None = None
-    name: str | None = None
-    companyName: str | None = None
-    disableAdmin: str | None = None
-    deviceProperty: str | None = None
-    start: str | None = None
-    all_items: dict | None = None
-    _source_data: str | None = None
+    """Used to parse and store info retrieved from SFOS connections
+
+    Args:
+        BaseModel (_type_): _description_
+
+    Raises:
+        _ex.KeyMissingError: _description_
+
+    """
+    csrf_token: str = None
+    displayModel: str = None
+    displayVersion: str = None
+    version: str = None
+    subscriptions: str = None
+    applianceKey: str = None
+    isOEMdevice: str = None
+    loginUserName: str = None
+    name: str = None
+    companyName: str = None
+    disableAdmin: str = None
+    deviceProperty: str = None
+    start: str = None
+    all_items: dict = None
+    _source_data: str = None
 
     @staticmethod
     def required_params() -> list[str]:
@@ -64,6 +73,18 @@ class FirewallInfo(BaseModel):
 
     @property
     def base_info(self) -> dict:
+        """Return the basic useful info collected
+
+        Returns:
+            dict: {
+                    "Model": self.displayModel,
+                    "displayVersion": self.displayVersion,
+                    "version": self.version,
+                    "serial_number": self.applianceKey,
+                    "companyName": self.companyName,
+                    "username": self.name,
+                }
+        """
         return {
             "Model": self.displayModel,
             "displayVersion": self.displayVersion,
@@ -74,36 +95,30 @@ class FirewallInfo(BaseModel):
         }
 
     def to_json(self, indent: Literal[0, 1, 2, 3, 4] = 2) -> str:
+        """Used by json_fix to serializa the class
+
+        Args:
+            indent (Literal[0, 1, 2, 3, 4], optional): _description_. Defaults to 2.
+
+        Returns:
+            str: _description_
+        """
         return json.dumps(self.base_info, indent=indent)
 
-    # @property
-    # def subscription_list(self) -> list:
-    #     result = []
-    #     sm = License(self.subscriptions, self.applianceKey)
-    #     for this in sm.entitlements:
-    #         exp = this.expiry_date.strftime(_DATE_FMT) if this.expiry_date else None
-    #         if this.name:
-    #             result.append(
-    #                 {
-    #                     "name": this.name,
-    #                     "start": str(this.start_date) if this.start_date else "",
-    #                     "end": exp,
-    #                     "timeframe": this.expiry_timeframe if exp else "",
-    #                 }
-    #             )
-    #     return result
-
-    # @property
-    # def subscription_dict(self) -> dict:
-    #     subs = self.subscription_list
-    #     result = {sub["name"]: sub for sub in subs if "name" in sub}
-    #     return result
-
     def get_license(self) -> License:
-        return License(self.subscriptions, self.applianceKey)
+        """Returns a License class for th efirewall
+
+        Returns:
+            License: _description_
+        """
+        try:
+            return License(self.subscriptions, self.applianceKey)
+        except _ex.JSONError as e:
+            raise _ex.ProcessorError("Unable to get license") from e
 
 
 class Entitlement:
+    """Encapsulates an item within a license parsed form index.jsp during firewall login"""
     def __init__(self, data, serial_number: str, bundle: str):
         dsta = data.get("Start Date") or ""
         dexp = data.get("Expiry Date") or ""
@@ -140,6 +155,11 @@ class Entitlement:
 
     @property
     def expiry_seconds(self) -> int:
+        """Returns time until subscription expires
+
+        Returns:
+            int: _description_
+        """
         if self.expiry_date is None:
             return None
         diff = self.expiry_date - datetime.now()
@@ -147,10 +167,12 @@ class Entitlement:
 
     @property
     def expiry_timeframe(self) -> str:
+        """Description of when subscription expires"""
         return span_desc(self.expiry_seconds)
 
 
 class License:
+    """Encapsulates license details parsed from index.jso during SFOS login"""
     def __init__(self, json_data: str, serial_number: str):
         self.entitlements: list[Entitlement] = []
 
@@ -175,13 +197,14 @@ class License:
             ]
 
         except json.JSONDecodeError as e:
-            print("Error parsing JSON:", e)
+            raise _ex.JSONError("Error parsing license from JSON") from e
 
     def __dict__(self) -> list[dict]:
         return [sub.__dict__ for sub in self.entitlements]
 
 
 class IndexParser:
+    """Parse index.jsp contents retrieved during sfos login"""
     def __init__(self, csrf_key: str = _p.DEFAULT_CSRF_KEY_NAME) -> None:
         """Accepts:
         csrf_key    (Optional) defaults to the static CSRF key value expected
@@ -190,10 +213,12 @@ class IndexParser:
         Updates:
             self.csrf_key_name
             self.re_tofind_csrf_key_value
+            self.csrf_token_value = None
         """
         super().__init__()
         # name of jsp var containing csrf token
         self.csrf_key_name = csrf_key
+        self.csrf_token_value = None
         self._compile_re_to_find_csrf_key_value()
 
     def _compile_re_to_find_csrf_key_value(self, csrf_key: str | None = None) -> None:
@@ -305,7 +330,7 @@ class IndexParser:
                 "csrf_key",
             )
             self.csrf_key_name = csrf_key_name
-            self._compile_re_to_find_csrf_key_value
+            self._compile_re_to_find_csrf_key_value()
 
         except _ex.NoMatchFound as e:
 
@@ -370,7 +395,7 @@ class IndexParser:
             if len(found_keys) == 0:
                 raise _ex.KeyParsingError("Unable to parse index.jsp")
 
-        if found_keys == {}:
+        if not found_keys:
             raise _ex.NoMatchFound(
                 (
                     "No matches found when searching for key value pairs"
@@ -506,6 +531,14 @@ parse_index = IndexParser()
 
 
 def span_desc(seconds: float | None) -> str:
+    """Create a human friendly description of a timespan
+
+    Args:
+        seconds (float | None): _description_
+
+    Returns:
+        str: _description_
+    """
     if not seconds:
         return ""
     if seconds < 0:

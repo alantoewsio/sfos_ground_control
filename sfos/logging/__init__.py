@@ -11,21 +11,23 @@ License.
 
 __all__ = [
     "log",
-    "trace",
-    "debug",
-    "info",
-    "error",
-    "trace_calls",
+    "logtrace",
+    "logdebug",
+    "loginfo",
+    "logerror",
     "Level",
     "init_logging",
+    "log_callstart",
+    "log_calldone",
 ]
 from sfos.logging.logging import (
     log,
-    trace,
-    debug,
-    info,
-    error,
-    trace_calls,
+    logtrace,
+    logdebug,
+    loginfo,
+    logerror,
     Level,
     init_logging,
+    log_callstart,
+    log_calldone,
 )

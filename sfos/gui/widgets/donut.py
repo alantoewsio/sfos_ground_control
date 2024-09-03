@@ -14,7 +14,7 @@ from typing import Any
 import streamlit as st
 import altair as alt
 
-from sfos.gui.widgets.widget import Widget
+from sfos.gui.widgets.widget import Widget, PropValue
 
 
 class Donut(Widget):
@@ -25,10 +25,9 @@ class Donut(Widget):
         connection: Connection,
         *where_filters: str,
         title: str = "Donut",
-        query: str = None,
-        query_file: str = None,
-        properties: dict = None,
-        filter_callback: callable = None,
+        query: str | None = None,
+        query_file: str | None = None,
+        **properties: PropValue,
     ):
         """_summary_
 
@@ -45,8 +44,7 @@ class Donut(Widget):
             title=title,
             query=query,
             query_file=query_file,
-            properties=properties,
-            filter_callback=filter_callback,
+            **properties,
         )
         self._default_properties["inner_radius"] = (
             self.properties.get(
@@ -54,27 +52,28 @@ class Donut(Widget):
                 self._default_properties.get("height", 160),
             )
             / 4
-        )
+        )  # type:ignore
 
     def draw_contents(self):
         """Display the latest query data in donut chart"""
 
-        data = self._fetch_data()[0]
-        height = self._get_property("height", 160) - 20
+        data = self._fetch_data()
 
-        inner_radius = self._get_property("inner_radius", height / 4)
+        height = self._get_property("height", 160) - 20  # type: ignore
+
+        inner_radius = self._get_property("inner_radius", height / 4)  # type: ignore
 
         chart = (
-            alt.Chart(data, height=height)
+            alt.Chart(data.all_rows, height=height)  # type:ignore
             .mark_text()
             .mark_arc(
                 innerRadius=self.properties.get("inner_radius", inner_radius),
             )
             .encode(
-                theta=alt.Theta(field="count", type="quantitative"),
+                theta=alt.Theta(field="count", type="quantitative"),  # type:ignore
                 color=alt.Color(
-                    field="status",
-                    type="nominal",
+                    field="status",  # type:ignore
+                    type="nominal",  # type:ignore
                 ),
             )
         )

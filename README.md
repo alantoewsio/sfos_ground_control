@@ -10,20 +10,40 @@ An Automation tool for SFOS WebAdmin
 git clone https://github.com/alantoewsio/sfos_ground_control.git
 ```
 
-## 2: Install Anaconda
+## 2a: Install Using Anaconda 
+
+### I: Install Anaconda
 
 * Download from https://docs.anaconda.com/anaconda/install/
 * follow installation instructions
 
-## 3: Create a python environment using conda
+### II: Create a python environment using conda
 
 After installation, create the conda environment from the environment.yml stored in the root of the project:
 
 ``` shell
-conda env load -f environment.yml
+conda env create -f environment.yml
+```
+## 2b: Install using venv
+
+### I: Create virtual environment
+
+* Open a command prompt in the folder SGC is installed in, then run the following:
+
+``` shell
+python -m venv .
 ```
 
-## 4: Create firewall inventory
+### II: Install requirements
+* From a command prompt in the SFC install folder, and with the venv loaded, run:
+
+``` shell
+pip install -r requirements.txt
+```
+
+Respond to any prompts raised by pip install. 
+
+## 3: Create firewall inventory
 
 The first step in managing firewalls is creating an inventory of firewalls to access and manage. The inventory file must be  in yaml format, and should contain access information for each firewall to be managed. A single firewall record must contain at least a hostname, but may contain more fields as desired. Any additional fields not listed below will be ignored.
 
@@ -132,4 +152,9 @@ Results will be added to grond_control.sqlite3 database file.
 
 ``` shell
 python gccli.py -i firewalls.yaml --username gcuser -c refresh
+```
+
+Launching the web user interface:
+``` shell
+streamlit run ground_control.py
 ```

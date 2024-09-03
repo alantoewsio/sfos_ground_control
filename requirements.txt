@@ -1,4 +1,5 @@
 altair==4.2.2
+attr==0.3.2
 hvac==2.3.0
 json_fix==1.0.0
 pandas==2.2.2
@@ -9,6 +10,7 @@ pytest==8.0.1
 python-dotenv==1.0.1
 PyYAML==6.0.2
 PyYAML==6.0.2
+st_mui_table==0.0.6
 streamlit==1.37.1
 streamlit_autorefresh==1.0.1
 streamlit_pills==0.3.0

@@ -19,8 +19,8 @@ from sfos.logging import (
     log,
     loginfo,
     logerror,
-    log_callstart,
-    log_calldone,
+    # log_callstart,
+    # log_calldone,
 )
 
 
@@ -83,7 +83,7 @@ def start_agent() -> None:
             log(
                 Level.INFO,
                 action="script",
-                args=str(list(args)),
+                args=str(list(args)),  # type:ignore
                 target_count=len(firewalls),
             )
             results = run_scripts(firewalls, args)
@@ -93,7 +93,7 @@ def start_agent() -> None:
             log(
                 Level.INFO,
                 action="query",
-                args=str(list(args)),
+                args=str(list(args)),  # type:ignore
                 target_count=len(firewalls),
             )
             results = run_query(args=args, db=db)

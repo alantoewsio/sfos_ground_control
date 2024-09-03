@@ -9,6 +9,7 @@ the License for the specific language governing permissions and limitations unde
 License.
 """
 
-__all__ = ["run_query", "load_query_from_file", "run_query_file"]
+__all__ = ["run_query", "load_query_from_file", "run_query_file", "PageData"]
 
 from sfos.gui.queries.query import run_query, load_query_from_file, run_query_file
+from sfos.gui.queries.pagination import PageData

@@ -15,15 +15,10 @@ from sqlite3 import Connection
 # from typing import Any
 
 import streamlit as st
+from st_mui_table import st_mui_table as MuiTable
 
-import pandas as pd
-
+from sfos.gui.queries import PageData
 from sfos.gui.widgets.widget import Widget
-from sfos.gui.widgets.page_selector import (
-    pagination_controls,
-    page_size_selector,
-    page_selection_status,
-)
 
 
 class Table(Widget):
@@ -34,8 +29,8 @@ class Table(Widget):
         connection: Connection,
         title: str,
         *where_filters: str,
-        query: str = None,
-        query_file: str = None,
+        query: str | None = None,
+        query_file: str | None = None,
         **properties: str | int | bool,
     ):
         """_summary_
@@ -65,8 +60,13 @@ class Table(Widget):
             query_file=query_file,
             **properties,
         )
+        self.refresh_data()
 
-    def _draw_top_actions(self, download_data: pd.DataFrame):
+    def refresh_data(self):
+        """Query latest date from db"""
+        self.data = self._fetch_data()
+
+    def _draw_top_actions(self, data: PageData):
         with st.container(
             border=False,
             height=70,
@@ -87,23 +87,18 @@ class Table(Widget):
             with mcol:
                 pass
             with rcol1:
+                page_sizes = [0, 1, 5, 10, 25, 50, 100, 250, 500, 1000]
 
-                # timestamp = datetime.now().strftime("%c").replace(" ", "_")
-                # filename = f"firewalls_{timestamp}.xlsx"
-                # dlfile = download_data.to_excel(filename, engine="xlsxwriter")
-                # st.download_button(
-                #     label="Download Excel",
-                #     data=dlfile,
-                #     file_name=filename,
-                #     mime="text/csv",
-                #     key="download-xlsx",
-                #     use_container_width=True,
-                # )
-                pass
+                st.select_slider(
+                    label="Page Size",
+                    key="set_page_size",
+                    options=page_sizes,
+                    value=self.data.page_size,
+                )
 
             with rcol2:
-                dlfile = download_data.to_csv()
-                timestamp = datetime.now().strftime("%c").replace(" ", "_")
+                dlfile = data.all_rows.to_csv()
+                timestamp = datetime.now().strftime(format="%c").replace(" ", "_")
                 filename = f"firewalls_{timestamp}.csv"
                 st.download_button(
                     label="Download .csv",
@@ -115,39 +110,52 @@ class Table(Widget):
                 )
 
     def draw_contents(self):
-        """Display the latest query data in donut chart"""
+        state = st.session_state
 
-        if "current_page" not in st.session_state:
-            st.session_state["current_page"] = 0
-        if "page_size" not in st.session_state:
-            st.session_state["page_size"] = 25
+        if "where_filter" in state:
+            self.__filter__(state["where_filter"])
+        else:
+            self.__filter__()
+        self.refresh_data()
 
-        current_page = st.session_state["current_page"]
-        page_size = st.session_state["page_size"]
-        row_height = self._get_property("row_height", 35)
-
-        page_data, row_count, current_page, page_count, all_data = self._fetch_data(
-            current_page=current_page,
-            page_size=page_size,
+        # check if page size changed
+        state["page_size"] = state.get("set_page_size", state.get("page_size", 5))
+        state["current_page"] = (
+            state.get("goto_page", state.get("current_page", 0) + 1) - 1
         )
+        self.data.set_page_size(state["page_size"])
+        self.data.set_page(page_no=state["current_page"])
+        # self._draw_top_actions(data=self.data)
 
-        self._draw_top_actions(all_data)
-        height = (len(page_data) + 1) * row_height
-        self.clicked = st.dataframe(
-            page_data,
-            use_container_width=True,
-            selection_mode="single-row",
-            hide_index=True,
-            height=height,
+        # Draw the table
+        state["table_height"] = (self.data.row_count + 1) * int(
+            state.get("row_height", 35)
         )
-        # Pagination
-        with st.container():
-            lcol, mcol, rcol = st.columns([1, 3, 1])
-            with lcol:
-                page_selection_status(current_page, page_count, row_count)
-
-            with mcol:
-                pagination_controls(current_page, page_count, 3)
-
-            with rcol:
-                page_size_selector()
+        # https://pypi.org/project/st-mui-table/
+        MuiTable(
+            self.data.all_rows,
+            enablePagination=True,
+            customCss="",
+            paginationSizes=[5, 10, 25, 50, 100, 250, 500, 1000],
+            size="medium",
+            padding="normal",
+            showHeaders=True,
+            key="mui_table",
+            stickyHeader=True,
+            paperStyle={
+                "width": "100%",
+                "overflow": "hidden",
+                "paddingBottom": "1px",
+                "border": "2px solid rgba(224, 224, 224, 1)",
+            },
+            detailColumns=[
+                "model",
+                "version",
+                "company",
+                "next_license_expiring",
+                "expiry_date",
+            ],
+            detailColNum=2,
+            detailsHeader="Firewall Details",
+            showIndex=False,
+        )

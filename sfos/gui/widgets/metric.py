@@ -12,8 +12,8 @@ License.
 from sqlite3 import Connection
 from typing import Any
 import streamlit as st
-from sfos.gui.widgets.widget import Widget
-
+from sfos.gui.widgets.widget import Widget, PropValue
+from sfos.gui.queries import PageData
 
 class Metric(Widget):
     """A donut chart class"""
@@ -23,9 +23,9 @@ class Metric(Widget):
         connection: Connection,
         title: str,
         *where_filters: str,
-        query: str = None,
-        query_file: str = None,
-        **properties: str | int | bool,
+        query: str | None = None,
+        query_file: str | None = None,
+        **properties: PropValue,
     ):
         """_summary_
 
@@ -51,8 +51,9 @@ class Metric(Widget):
     def draw_contents(self):
         """Display the latest query data in donut chart"""
 
-        data = self._fetch_data()[0]
-        num = format_number(data["count"].iloc[0])
+        data: PageData = self._fetch_data()
+        showdata = data.all_rows
+        num = format_number(showdata["count"].iloc[0])
         sz = self._get_property("font_size", "5rem")
         st.html(
             f"<div align='center' style='font-weight: bold;font-size: {sz}'>{num}</div>"

@@ -81,10 +81,10 @@ for w in widgets:
     if w.clicked:
         for wdef in widget_defs:
             if wdef["title"] == w.title:
-                st.write(wdef)
+                # st.write(wdef)
                 st.session_state["where_filters"] = wdef["filter"]["filters"]
                 pills("Showing:", [wdef["filter"]["name"]], ["🏷️"])
-
+                st.rerun()
 # Create the main table
 fw_table = Table(
     connection=conn,

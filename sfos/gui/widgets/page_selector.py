@@ -14,10 +14,16 @@ import streamlit as st
 
 def _pagination_callback(current_page: int):
     st.session_state["current_page"] = current_page
+    st.write("refreshing..")        
     # if "current_page" not in st.session_state:
 
 
-def _add_btn(label: str, current_page: int, key: str = None, disabled: bool = False):
+def _add_btn(
+    label: str,
+    current_page: int,
+    key: str | None = None,
+    disabled: bool = False,
+):
     if not key:
         key = f"pg-{label}"
     st.button(
@@ -30,8 +36,18 @@ def _add_btn(label: str, current_page: int, key: str = None, disabled: bool = Fa
     )
 
 
-def pagination_controls(current_page: int, page_count: int, maxperside: int = 5):
+@st.fragment
+def pagination_controls(maxperside: int = 5):
     """Add pagination buttons"""
+
+    if "current_page" not in st.session_state:
+        st.session_state["current_page"] = 0
+    if "page_count" not in st.session_state:
+        st.session_state["page_count"] = 0
+
+    current_page = st.session_state["current_page"]
+    page_count = st.session_state["page_count"]
+
     last_page = page_count - 1
     lbuttons = min(maxperside, current_page)
     rbuttons = min(maxperside, last_page - current_page)
@@ -84,33 +100,53 @@ def pagination_controls(current_page: int, page_count: int, maxperside: int = 5)
                 idx += 1
 
         with cols[idx]:
-            _add_btn("\>", current_page + 1, "pg-next", disabled=not rbuttons)
+            _add_btn(r"\>", current_page + 1, "pg-next", disabled=not rbuttons)
             idx += 1
 
         with cols[idx]:
-            _add_btn("\>\>", last_page, "pg-last", disabled=not rbuttons)
+            _add_btn(r"\>\>", last_page, "pg-last", disabled=not rbuttons)
             idx += 1
 
 
-def page_selection_status(current_page: int, page_count: int, row_count: int):
+def page_selection_status():
     """Page x of y (# Rows)
     or if page_count =-1
     # Rows"""
-    if page_count < -2:
-        st.text(f"{row_count} Rows")
+
+    if "current_page" not in st.session_state:
+        st.session_state["current_page"] = 0
+    if "page_count" not in st.session_state:
+        st.session_state["page_count"] = 0
+    if "row_count" not in st.session_state:
+        st.session_state["row_count"] = 0
+
+    if st.session_state["page_count"] < -2:
+        st.text(f"{st.session_state["row_count"]} Rows")
     else:
-        st.text(f"Page {current_page + 1} of {page_count} ({row_count} Total Rows)")
+        st.text(
+            f"Page {st.session_state["current_page"] + 1} of "
+            f"{st.session_state["page_count"]} "
+            f"({st.session_state["row_count"]} Total Rows)"
+        )
 
-
-def page_size_selector():
+def page_size_selector(page_sizes: list[int], default_index: int = 0):
     """Set the current paging size
 
     Args:
         page_size (int): _description_
     """
+
+    if "page_size" not in st.session_state:
+        st.session_state["page_size"] = page_sizes[default_index]
+        st.write(f"page_size not set. setting to {st.session_state["page_size"]}")
+
+    elif st.session_state["page_size"] not in page_sizes:
+        st.write(f"invalid page size requested: {st.session_state["page_size"]}")
+        st.session_state["page_size"] = page_sizes[default_index]
+
     st.selectbox(
         label="Page Size",
-        options=[1, 2, 5, 10, 25, 50, 100, 200, 500, 1000],
+        options=page_sizes,
         label_visibility="hidden",
         key="page_size",
         # on_change=_page_size_callback,

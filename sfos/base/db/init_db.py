@@ -11,8 +11,9 @@ License.
 
 from sfos.base.db import GroundControlDB as _db
 from sfos.base.db import instance
-from sfos.logging.logging import log, Level
-from sfos.static import DATE_TIME_FMT as _DATE_FMT
+from sfos.logging.logging import log, Level, logtrace
+
+SQL_INIT_PATH = "./sfos/base/db/init"
 
 
 def init_db(filename: str | None = None) -> _db:
@@ -24,6 +25,7 @@ def init_db(filename: str | None = None) -> _db:
     Returns:
         _db: _description_
     """
+    logtrace(action="init_db")
     instance.db = None
     if filename:
         log(Level.INFO, f"Initializing db '{filename}'")
@@ -31,16 +33,31 @@ def init_db(filename: str | None = None) -> _db:
     else:
         instance.db = _db()
         log(Level.INFO, f"Initialized db '{instance.db.filename}'")
+
+    # # Run database init scripts
+    # logtrace(f"fetching init scripts from  {SQL_INIT_PATH}")
+    # init_scripts = instance.db.list_sql_files(SQL_INIT_PATH)
+    # logtrace(f"found {len(init_scripts)} sql init scripts: {init_scripts}")
+    # init_scripts_sql = [
+    #     instance.db.load_sql_from_file(file, path=SQL_INIT_PATH)
+    #     for file in init_scripts
+    # ]
+
+    # if instance.db.create_db(init_scripts_sql):
+    #     log(
+    #         Level.INFO,
+    #         action="init_db",
+    #         files=init_scripts,
+    #         database=instance.db.filename,
+    #         success=True,
+    #     )
+    # else:
+    #     log(
+    #         Level.WARNING,
+    #         action="init_db",
+    #         files=init_scripts,
+    #         database=instance.db.filename,
+    #         success=False,
+    #     )
     assert instance.db  # GroundControlDB class is instantiated successfully
-    init_scripts = ["init_tables.sql", "init_views.sql", "init_views.sql"]
-    init_scripts_sql = [instance.db.load_sql_from_file("init_tables.sql")]
-
-    if instance.db.create_db(init_scripts_sql):
-        log(
-            Level.INFO,
-            action="init_db",
-            files=init_scripts,
-            database=instance.db.filename,
-        )
-
     return instance.db

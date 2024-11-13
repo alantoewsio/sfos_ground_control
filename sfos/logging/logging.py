@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import json_fix  # noqa: F401
 import logging
 import os
 
@@ -30,11 +31,13 @@ from sfos.logging.methods import resp2dict
 # Generics for decorators
 P = ParamSpec("P")
 R = TypeVar("R")
-MessageType: TypeAlias = str | list|object|Level
+MessageType: TypeAlias = str | list | object | Level
+
 
 @dataclass
 class State:
     """Global variables"""
+
     init_called: bool = False
     timers: dict = {}
 
@@ -52,6 +55,7 @@ FI_LINENO = 2
 FI_FUNCTION = 3
 FI_CODE_CONTEXT = 4
 IF_INDEX = 5
+
 
 def caller_name(stacklevel: int = 1) -> str:
     """Get the name of the calling function"""
@@ -86,7 +90,9 @@ def mimic_paramspec(copy_from: Callable[P, R]) -> None:
     def _decorate(fn: Callable) -> Callable[P, R]:
         def _wrap(*args, **kwargs):
             return fn(*args, **kwargs)
+
         return _wrap  # type: ignore
+
     return _decorate  # type: ignore
 
 
@@ -103,7 +109,7 @@ def logtrace(
     Returns:
         None | Exception | object: _description_
     """
-    return log(*messages,level=Level.TRACE, stacklevel=stacklevel + 1, **kwargs)
+    return log(*messages, level=Level.TRACE, stacklevel=stacklevel + 1, **kwargs)
 
 
 def logdebug(
@@ -119,7 +125,7 @@ def logdebug(
     Returns:
         None | Exception | object: _description_
     """
-    return log(*messages,level=Level.DEBUG, stacklevel=stacklevel + 1, **kwargs)
+    return log(*messages, level=Level.DEBUG, stacklevel=stacklevel + 1, **kwargs)
 
 
 def logerror(
@@ -128,7 +134,7 @@ def logerror(
     **kwargs: str | int | list | bool | None,
 ) -> None | Exception | object:
     """Write an error log entry"""
-    return log( *messages,level=Level.ERROR, stacklevel=stacklevel + 1, **kwargs)
+    return log(*messages, level=Level.ERROR, stacklevel=stacklevel + 1, **kwargs)
 
 
 def loginfo(
@@ -144,7 +150,7 @@ def loginfo(
     Returns:
         None | Exception | object: _description_
     """
-    return log(*messages,level=Level.INFO,  stacklevel=stacklevel + 1, **kwargs)
+    return log(*messages, level=Level.INFO, stacklevel=stacklevel + 1, **kwargs)
 
 
 def log(
@@ -162,10 +168,10 @@ def log(
     Returns:
         None | Exception | object: _description_
     """
-    msgs =[]
-    
+    msgs = []
+
     for itm in messages:
-        if isinstance(itm,Level):
+        if isinstance(itm, Level):
             level = itm
         else:
             msgs.append(itm)
@@ -176,9 +182,9 @@ def log(
     ret_obj = None
     ret_error = None
     idx = 0
-    for item in msgs:
+    for i, item in enumerate(msgs):
         if isinstance(item, Exception):
-            ret_error = item
+            ret_error = msgs.pop(i)
             break
         elif hasattr(item, "error") and isinstance(item.error, Exception):  # type: ignore
             ret_error = item.error  # type: ignore
@@ -199,23 +205,33 @@ def log(
         if hasattr(ret_obj, "timer"):
             kwargs["timer"] = ret_obj.timer  # type: ignore
         if level == Level.TRACE:
-            if hasattr(ret_obj,
-                       "response",
-                       ) and ret_obj.response is not None:  # type: ignore
+            if (
+                hasattr(
+                    ret_obj,
+                    "response",
+                )
+                and ret_obj.response is not None
+            ):  # type: ignore
                 kwargs["response"] = json.dumps(
-                            resp2dict(ret_obj.response) # type: ignore
-                        )  
+                    resp2dict(ret_obj.response)  # type: ignore
+                )
 
-    # positional_args = (
-    #     [msg for msg in msgs if isinstance(message, str)]
-    #     if msgs
-    #     else []
-    # )
-    
-    # kw_args = [f'{key}="{str(value)}"' if not isinstance(value,Callable) else ""  for key, value in kwargs.items()]
-    # message = positional_args
-    # message.extend(kw_args)
-    message = ""
+    positional_args = (
+        [msg for msg in msgs if isinstance(msg, MessageType)] if msgs else []
+    )
+
+    kw_args = [
+        f'{k}="{str(v)}"' if isinstance(v, MessageType) else f"'{type(v)}'"
+        for k, v in kwargs.items()
+    ]
+    log_msgs = positional_args
+    log_msgs.extend(kw_args)
+    for msg in log_msgs:
+        if not isinstance(msg, str):
+            print(type(msg), msg)
+
+    message = " ".join(log_msgs) if log_msgs else ""
+    message = message.replace("\r", "").replace("\n", "\\n")
     if ret_error:
         logging.exception(ret_error, stacklevel=stacklevel + 1)
     else:
@@ -236,10 +252,10 @@ def log_callstart(
         verbose (bool, optional): _description_. Defaults to False.
         stacklevel (int, optional): _description_. Defaults to 1.
     """
-    
+
     current_frame = inspect.currentframe()
     frames = inspect.getouterframes(frame=current_frame)
-    
+
     # FrameInfo(frame, filename, lineno, function, code_context, in dex) is returned.
     ancestry: list[str] = []
     for f in frames:
@@ -247,17 +263,19 @@ def log_callstart(
 
     caller = frames[-2]
     caller_args = inspect.getargvalues(caller[FI_FRAME])
-    
-    arg_dict = caller_args.__dict__
-    args=[f"arg_{k}{f"='{v}'" if verbose else str(type(v))}" for k,v in arg_dict.items()]
-    logstate.timers[caller[FI_FUNCTION]] = datetime.now(tz=UTC)
-    log(level=level,args=args,verbose=verbose, stacklevel=stacklevel + 1)
 
-def log_calldone(level: Level = Level.TRACE,    
-    verbose: bool = False,
-    stacklevel: int = 1,**kwargs
+    arg_dict = caller_args.__dict__
+    args = [
+        f"arg_{k}{f"='{v}'" if verbose else str(type(v))}" for k, v in arg_dict.items()
+    ]
+    logstate.timers[caller[FI_FUNCTION]] = datetime.now(tz=UTC)
+    log(level=level, args=args, verbose=verbose, stacklevel=stacklevel + 1)
+
+
+def log_calldone(
+    level: Level = Level.TRACE, verbose: bool = False, stacklevel: int = 1, **kwargs
 ):
-    """log info about the call near its completion, and log the time taken in ms if 
+    """log info about the call near its completion, and log the time taken in ms if
     log_callstart was called earlier
 
     Args:
@@ -269,8 +287,10 @@ def log_calldone(level: Level = Level.TRACE,
     caller = frames[-2]
     timer = -1
     if caller[FI_FUNCTION] in logstate.timers:
-        timer = (datetime.now - logstate.timers[caller[FI_FUNCTION]]).total_seconds()*1000
+        timer = (
+            datetime.now - logstate.timers[caller[FI_FUNCTION]]
+        ).total_seconds() * 1000
         del logstate.timers[caller[FI_FUNCTION]]
 
-    timer = f"{timer:f}ms" if timer>=0 else "-"
-    log(level=level,verbose=verbose, timer=timer, stacklevel=stacklevel+1,**kwargs)
+    timer = f"{timer:f}ms" if timer >= 0 else "-"
+    log(level=level, verbose=verbose, timer=timer, stacklevel=stacklevel + 1, **kwargs)

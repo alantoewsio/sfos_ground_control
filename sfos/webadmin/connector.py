@@ -13,11 +13,13 @@ License.
 
 from __future__ import annotations
 import json
+import json_fix  # noqa: F401
+
 from datetime import datetime
+
 # import trace
 from typing import Literal
 
-import json_fix  # pylint: disable=unused-import
 
 from requests import (
     Session as _session,
@@ -34,15 +36,6 @@ from sfos.logging.logging import logtrace, logerror
 from sfos.objects import SfosResponse
 from sfos.objects.firewall_info import FirewallInfo as _fwi, parse_index as _parse_index
 from sfos.static import exceptions as _ex, SfosMode as _req_mode, constants as _c
-
-# import (
-#     AgentError as _agent_error,
-#     LoginError as _login_err,
-#     NameResolutionError as _name_err,
-#     CertificateError as _crt_err,
-#     AgentConnectionError as _con_err,
-#     ConnectionTimeoutError as _con_to_err,
-# )
 from sfos.webadmin.methods import (
     make_sfos_request as _make_req,
     load_definition,

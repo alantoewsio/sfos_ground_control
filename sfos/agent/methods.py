@@ -8,6 +8,7 @@ BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 the License for the specific language governing permissions and limitations under the
 License.
 """
+
 # pylint: disable=broad-exception-caught
 import argparse as _args
 import json
@@ -26,8 +27,10 @@ from sfos.logging import logerror
 from sfos.objects import FirewallInfo as _fwi, ServiceAddress as _sa
 from sfos.webadmin import Connector
 
+
 class AgentMethodsError(Exception):
     """Generic error raised by agent method calls"""
+
 
 # @log_calls_decorator(Level.DEBUG, True, False)
 def db_save_subs(db: _db | None = None, all_info: _fwi | None = None) -> None:
@@ -99,11 +102,11 @@ def db_save_info(
 
 def process_state_variables(raw_script: str, state: dict | None = None) -> str:
     """Replaces placeholder {variable} srings in raw_script with values of matching
-      keys in state dict, if present
-      Accepts:
-        raw_script: str  raw text contents of script to be run
-        state: dict      a dict containing variable keys and replacement values
-      """
+    keys in state dict, if present
+    Accepts:
+      raw_script: str  raw text contents of script to be run
+      state: dict      a dict containing variable keys and replacement values
+    """
     result = raw_script
     if r"{state." in raw_script:
         for k in state.items():
@@ -138,7 +141,7 @@ def load_file_str(filename: str) -> str:
     """
     try:
         contents: str | None = None
-        with open(filename,encoding="utf-8") as f:
+        with open(filename, encoding="utf-8") as f:
             contents = f.read()
         return contents
 
@@ -149,7 +152,7 @@ def load_file_str(filename: str) -> str:
         raise AgentMethodsError from e
 
 
-def read_cred_args(args:  _args.Namespace) -> dict:
+def read_cred_args(args: _args.Namespace) -> dict:
     """_summary_
 
     Args:
@@ -188,7 +191,7 @@ def _convert_inventory_to_connectors(inventory: list) -> list[Connector]:
                 Connector(
                     hostname=fw["hostname"],
                     port=fw["port"],
-                    verify_tls=verify_tls ,
+                    verify_tls=verify_tls,
                     username=fw["username"],
                     password=fw["password"],
                 )
@@ -213,14 +216,13 @@ def _read_yaml_file(filename: str) -> dict:
 
 def _fill_missing_values_with_defaults(
     yaml_dict: list,
-    hostname:str = "172.16.16.16",
-    port:int = 4444,
-    verify_tls:bool = True,
-    username:str=None,
-    password:str=None,
+    hostname: str = "172.16.16.16",
+    port: int = 4444,
+    verify_tls: bool = True,
+    username: str = None,
+    password: str = None,
 ) -> list:
-        
-    
+
     for fw in yaml_dict:
         if "hostname" not in fw:
             fw["hostname"] = hostname
@@ -235,17 +237,17 @@ def _fill_missing_values_with_defaults(
     return yaml_dict
 
 
-
-
 def _parse_inv(
-    yaml_dict: list | None, args:  _args.Namespace, creds: dict,
+    yaml_dict: list | None,
+    args: _args.Namespace,
+    creds: dict,
 ) -> list:
     if yaml_dict is None:
         return []
 
     # return _fill_missing_values_with_defaults(
-    #     yaml_dict, 
-    #     args.hostname, 
+    #     yaml_dict,
+    #     args.hostname,
     #     args.port,
     #     args.verift_tls,
     #     creds["fw_username"],
@@ -273,7 +275,7 @@ def _combine_lists(source: list, dest: list) -> list:
     return dest
 
 
-def read_firewall_inventory(args:  _args.Namespace, creds: dict) -> list[Connector]:
+def read_firewall_inventory(args: _args.Namespace, creds: dict) -> list[Connector]:
     """read inventory args
 
     Args:
@@ -345,7 +347,7 @@ def response_to_dict(response: Response, _root: bool = True):
         if _root:
             response_dict["history"] = [
                 response_to_dict(h, False) for h in response.history
-                ]
+            ]
 
     except Exception as e:
         msg = f"resp2dict Exception: type='{type(e)}' msg='{e}'"

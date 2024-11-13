@@ -8,6 +8,7 @@ BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 the License for the specific language governing permissions and limitations under the
 License.
 """
+
 # pylint: disable=broad-exception-caught
 
 import prettytable
@@ -19,11 +20,13 @@ from sfos.logging import (
     log,
     loginfo,
     logerror,
+    init_logging,
     # log_callstart,
     # log_calldone,
 )
 
-
+init_logging(level=Level.INFO)
+loginfo("Starting init_db")
 db = init_db()
 
 
@@ -43,11 +46,12 @@ def start_agent() -> None:
 
             results = run_cli_command(firewalls, args, rest, db)
             command_summary = [
-                (r.fw.address.address, r.success, r.error) for r in results  # type: ignore
+                (r.fw.address.address, r.success, r.error) for r in results
             ]
             loginfo(action="command", results=command_summary)
             if args.command == "refresh":
-                query = "SELECT * FROM inventory_dashboard"  # db.load_sql_from_file("dashboard.sql")
+                query = "SELECT * FROM inventory_dashboard"
+                # query = db.load_sql_from_file("dashboard.sql")
                 try:
                     records = db.execute(query) if query else []
                     print(f"query 'dashboard.sql' has {len(records)}records")
@@ -55,7 +59,7 @@ def start_agent() -> None:
                     print(table)
                 except Exception as e:
                     logerror(e)
-                    print("Actopns complete - error displaying summary.")
+                    print("Actions complete - error displaying summary.")
 
             failures = []
             for sr in results:

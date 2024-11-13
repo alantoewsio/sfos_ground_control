@@ -8,6 +8,7 @@ BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 the License for the specific language governing permissions and limitations under the
 License.
 """
+
 # pylint: disable=broad-exception-caught
 
 from datetime import datetime
@@ -31,12 +32,21 @@ class DBError(Exception):
 class Database:
     """Lightweight wrapper for working with sqlite database"""
 
-    def __init__(self, filename: str | None = None, init_sql: str | None = None):
+    def __init__(self, filename: str | None = None, init_sql: str | list | None = None):
         self.filename = filename
         self.connection: Connection | None = None
         self.cursor: Cursor | None = None
+        logdebug(f"initializing db - file:'{filename}'")
         if init_sql:
+            if isinstance(init_sql, str):
+                count = 1
+            else:
+                count = len(init_sql)
+
+            logdebug(f"Executing init_sql ({count} scripts)")
             self.execute(init_sql)
+        else:
+            logdebug("No init_sql to execute")
 
     def get_connection(self) -> Connection:
         """Get a Connection to the current database
@@ -182,9 +192,13 @@ class Database:
             _execute=self.execute,
         )
 
-    def load_sql_from_file(
-        self, filename: str, path: str = "sfos/gui/queries/", default: str | None = None
-    ) -> str | None:
+    def list_sql_files(self, path: str, ext: str = ".sql"):
+        if not os.path.exists(path):
+            raise _ex.PathNotFound(f"Path '{path}' not found")
+        sql_files = [file for file in os.listdir(path) if file.endswith(ext)]
+        return sql_files
+
+    def load_sql_from_file(self, filename: str, path: str) -> str | None:
         """Retrieve the sql found in the given filename or return default if not found
 
         Args:
@@ -199,14 +213,14 @@ class Database:
         Returns:
             str: contents of sql file
         """
-        path = "" if not path else path
-        path = f"{path}/" if path and not path.endswith("/") else path
         filename = filename if filename.endswith(".sql") else f"{filename}.sql"
         qfile = Path(path, filename)
         if qfile.exists():
             result = qfile.read_text(encoding="utf-8")
         else:
-            result = default
+            if not os.path.exists(path):
+                raise _ex.PathNotFound(f"Path '{path}' not found")
+            raise _ex.FileNotFound(f"File '{qfile}' not found")
 
         logdebug(file=str(qfile), result=str(result))
         return result
@@ -375,6 +389,20 @@ class Database:
 
     def execute(
         self,
+        statements: str | list[str],
+        close: bool = True,
+        params: list | None = None,
+    ) -> list[Any]:
+        results = []
+        if isinstance(statements, str):
+            statements = [statements]
+
+        for statement in statements:
+            results.append(self._execute(statement, close, params))
+        return results
+
+    def _execute(
+        self,
         statement: str,
         close: bool = True,
         params: list | None = None,
@@ -395,34 +423,36 @@ class Database:
         try:
             cursor = self.get_cursor()
 
+            if statement.count(";") > 1 and not params:
+                logdebug(
+                    "Using cursor.executescript",
+                    separators=statement.count(";"),
+                    params=params is not None,
+                )
+                execute = cursor.executescript
+            else:
+                logdebug("Using cursor.execute")
+                execute = cursor.execute
+
             if params:
                 logtrace(sql=statement, params=params)
-                cursor.execute(statement, params)
+                execute(statement, params)
             else:
                 logtrace(sql=statement, params=str(None))
-                cursor.execute(statement)
-
-            # cursor.execute(statement, parameters)
+                execute(statement)
 
             results = cursor.fetchall()
             if close:
                 self.close_connection()
 
             return results
-        except Exception as e:
+        except sqlite3.OperationalError as e:
             log(
                 level=Level.ERROR,
                 Error=f"{e}",
                 statement=statement,
                 parameters=params or [],
             )
-            # print(
-            #     "***** execute Error *****\n",
-            #     f"message='{str(e)}', type='{type(e)}'\n",
-            #     f"params='{params}'\n",
-            #     f"SQL:\n'{statement}'",
-            # )
-            raise e
 
     def insert_or_update(
         self,

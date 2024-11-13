@@ -16,9 +16,10 @@ import sqlite3
 from sfos.objects.firewall_info import FirewallInfo
 from sfos.static import exceptions as _ex
 from sfos.db import Database
-from sfos.static import DATE_TIME_FMT as _DATE_TIME_FMT
 from sfos.webadmin.connector import Connector as _conn, SfosResponse as _sresp
 from sfos.logging import logtrace, logerror
+
+SQL_INIT_PATH = "./sfos/base/db/init"
 
 
 class GroundControlDB(Database):
@@ -31,7 +32,14 @@ class GroundControlDB(Database):
     def __init__(self, filename: str | None = None):
         if not filename:
             filename = os.getenv("GROUND_CONTROL_DB_KEY", "./ground_control.sqlite3")
-        super().__init__(filename)
+        # Run database init scripts
+        logtrace(f"fetching init scripts from  {SQL_INIT_PATH}")
+        init_scripts = self.list_sql_files(SQL_INIT_PATH)
+        logtrace(f"found {len(init_scripts)} sql init scripts: {init_scripts}")
+        sql_init_scripts = [
+            self.load_sql_from_file(file, path=SQL_INIT_PATH) for file in init_scripts
+        ]
+        super().__init__(filename, sql_init_scripts)
 
     def _prep_resp_for_inventory_update(self, sresp: _sresp) -> dict:
         """Format a dictionary with the firewall inventory info
@@ -88,7 +96,7 @@ class GroundControlDB(Database):
         return entitlements
 
     def load_sql_from_file(
-        self, filename: str, path: str = "sfos/base/db/sql/", default: str | None = None
+        self, filename: str, path: str = "sfos/base/db/sql/"
     ) -> str | None:
         """Load the contents of a .sql file from 'path' folder.
 
@@ -103,7 +111,7 @@ class GroundControlDB(Database):
         Returns:
             str: _description_
         """
-        return super().load_sql_from_file(filename=filename, path=path, default=default)
+        return super().load_sql_from_file(filename=filename, path=path)
 
     def insert_or_update_fwinfo(self, response: _sresp):
         """Attempt to insert an inventory record, and update the inventory if it
@@ -112,10 +120,6 @@ class GroundControlDB(Database):
             data (dict): _description_
             success (bool, optional): _description_. Defaults to True.
         """
-        # if not response.data.base_info:
-        #     raise _ex.ResponseContentError(
-        #         "Response does not contain FirewallInfo data. Cannot save results in db"
-        #     )
 
         hostname = "NONE"
         try:

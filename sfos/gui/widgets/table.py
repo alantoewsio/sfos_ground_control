@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -22,7 +22,7 @@ from sfos.gui.widgets.widget import Widget
 
 
 class Table(Widget):
-    """A donut chart class"""
+    """A Material UI table class"""
 
     def __init__(
         self,
@@ -37,10 +37,11 @@ class Table(Widget):
 
         Args:
             connection (Connection): _description_
-            title (str, optional): _description_. Defaults to "Donut".
+            title (str, optional): _description_.
             query (str, optional): _description_. Defaults to None.
             query_file (str, optional): _description_. Defaults to None.
-            **properties (str | int | bool, optional): e.g. {"height": 150, "inner_radius": 40}.
+            **properties (str | int | bool, optional):
+              e.g. {"height": 150, "inner_radius": 40}.
 
             Table properties:
                 page_size (int): Defaults to 20
@@ -69,7 +70,7 @@ class Table(Widget):
     def _draw_top_actions(self, data: PageData):
         with st.container(
             border=False,
-            height=70,
+            height=90,
         ):  # Tools
             lcol1, lcol2, mcol, rcol1, rcol2 = st.columns(
                 [4, 1, 4, 1.5, 1.5],
@@ -77,13 +78,15 @@ class Table(Widget):
             )
 
             with lcol1:
-                st.text_input(
-                    label="Search",
-                    key="search",
-                    placeholder="enter value to search for (not implemented yet)",
-                )
+                pass
+                # st.text_input(
+                #     label="Search",
+                #     key="search",
+                #     placeholder="enter value to search for (not implemented yet)",
+                # )
             with lcol2:
-                st.button("Search", use_container_width=True)
+                pass
+                # st.button("Search", use_container_width=True)
             with mcol:
                 pass
             with rcol1:
@@ -131,6 +134,7 @@ class Table(Widget):
         state["table_height"] = (self.data.row_count + 1) * int(
             state.get("row_height", 35)
         )
+        self._draw_top_actions(self.data)
         # https://pypi.org/project/st-mui-table/
         MuiTable(
             self.data.all_rows,

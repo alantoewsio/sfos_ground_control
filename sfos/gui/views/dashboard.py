@@ -13,6 +13,7 @@ import json
 import sqlite3
 import streamlit as st
 from streamlit_pills import pills
+
 # from streamlit_autorefresh import st_autorefresh
 
 from sfos.gui.widgets import Donut, Metric, Table
@@ -44,12 +45,7 @@ with colL:
 with colM:
     pass
 with colR:
-    st.button(
-        "Show fw test",
-        on_click=_show_fw_callback,
-        use_container_width=True,
-        kwargs={"serial_number": "X23001RQQV66831"},
-    )
+    pass
 # Create the top-of-page widgets from defs
 widgets = []
 for w in widget_defs:

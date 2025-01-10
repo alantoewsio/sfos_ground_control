@@ -11,6 +11,7 @@ License.
 
 from sqlite3 import Connection
 from typing import Callable, TypeAlias
+
 # from attr import dataclass
 import streamlit as st
 
@@ -18,12 +19,14 @@ from sfos.static import exceptions as _ex
 from sfos.gui.queries import run_query, load_query_from_file, PageData
 
 
-PropValue: TypeAlias = str|int|bool|None
+PropValue: TypeAlias = str | int | bool | None
+
 
 def _not_overridable(method: Callable):
     # Use as decorator to prevent a child class from ovverriding a method
-    method.is_final = True # type:ignore
+    method.is_final = True  # type:ignore
     return method
+
 
 @st.dialog("Alert")
 def show_alert_dialog(message: str):
@@ -34,6 +37,7 @@ def show_alert_dialog(message: str):
     """
     st.write(message)
 
+
 class Widget:
     """A base chart class"""
 
@@ -42,8 +46,8 @@ class Widget:
         connection: Connection,
         title: str,
         *where_filters: str,
-        query: str|None = None,
-        query_file: str|None = None,
+        query: str | None = None,
+        query_file: str | None = None,
         **properties: PropValue,
     ):
         self.properties = dict(properties) or {}
@@ -51,8 +55,10 @@ class Widget:
         self.paged = self._get_property("paged", False)
 
         self.page_size = self._get_property("page_size", 20)
-        row_ht = self._get_property("row_height", 35) # type:ignore
-        self._default_properties["height"] = (self.page_size + 1) * row_ht # type:ignore
+        row_ht = self._get_property("row_height", 35)  # type:ignore
+        self._default_properties["height"] = (
+            self.page_size + 1
+        ) * row_ht  # type:ignore
 
         self.connection = connection
         self.title = title
@@ -62,19 +68,19 @@ class Widget:
 
         # Streamlit element that can be clicked
         self.clicked = None
-    def __filter__(self,*where_filters:str):
-        self.where_filters=where_filters
 
+    def __filter__(self, *where_filters: str):
+        self.where_filters = where_filters
 
-    def __query__(self)->str:
+    def __query__(self) -> str:
         if not self.query:
             raise _ex.PropertyNotSetError("Query statement is not set")
         where_filters = (
-            f"WHERE {" AND ".join(self.where_filters)}"
-            if self.where_filters else ""
+            f"WHERE {" AND ".join(self.where_filters)}" if self.where_filters else ""
         )
         query = (
-            self.query if not self.where_filters
+            self.query
+            if not self.where_filters
             else f"SELECT * FROM ({self.query}) {where_filters}"
         )
         return query
@@ -88,32 +94,36 @@ class Widget:
             return default
 
     def _fetch_data(
-            self,
-            current_page: int  = 0,
-            show_row: int =-1,
-            page_size: int =-1,
+        self,
+        current_page: int = 0,
+        show_row: int = -1,
+        page_size: int = -1,
     ) -> PageData:
         """Return the selected page of data from the database
 
         Args:
             current_page (int, optional): Page number (first page=0). Defaults to None.
-                                          If first_record and current_page are None, all records will be.
-            first_record (int, optional): Set the page number to the page containing this record (first record=0). Defaults to None.
-                                          If first_record and current_page are None, all records will be.
-            page_size (int, optional): Number of records to include on a page. Defaults to None.
+                                          If first_record and current_page are None,
+                                          all records will be.
+            first_record (int, optional): Set the page number to the page containing this
+                                          record (first record=0). Defaults to None.
+                                          If first_record and current_page are None,
+                                          all records will be.
+            page_size (int, optional): Number of records to include on a page.
+                                          Defaults to None.
                                           If None, all data is returned
 
         Returns:
             tuple[pd.DataFrame,row_count:int,current_page:int,pages:int]: _description_
         """
-    
+
         query = self.__query__()
-        results =  run_query(query, self.connection)
+        results = run_query(query, self.connection)
         data = PageData(data=results, page_size=page_size)
         data.set_page(page_no=current_page, row_no=show_row)
         return data
-    
-    def alert(self,message:str):
+
+    def alert(self, message: str):
         """Show an alert dialog"""
         show_alert_dialog(message)
 
@@ -122,7 +132,7 @@ class Widget:
         """Refresh the data from the given query
         and filter and display the data in a chart"""
         # Orchestrate the drawing of the widget
-        outer_height = self._get_property("height", 150) + 120 # type:ignore
+        outer_height = self._get_property("height", 150) + 120  # type:ignore
 
         if self._get_property("outer_container", True):
             with st.container(height=outer_height, border=False):
@@ -134,8 +144,8 @@ class Widget:
         # Draw the widget title and container then call show_chard_contents
         st.markdown(f"##### {self.title}")
         with st.container(
-            height=self._get_property("height", 150), # type:ignore
-            border=self._get_property("border", True), # type:ignore
+            height=self._get_property("height", 150),  # type:ignore
+            border=self._get_property("border", True),  # type:ignore
         ):
             self.draw_contents()
 
@@ -153,7 +163,7 @@ class Widget:
 
         st.dataframe(data.all_rows, hide_index=True, use_container_width=True)
 
-    def reload_query_file(self, query_file: str |None = None):
+    def reload_query_file(self, query_file: str | None = None):
         """Reload the query from file
 
         Args:

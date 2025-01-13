@@ -7,6 +7,11 @@
 firewalls.yaml
 firewalls.yml
 __pycache__/
+.venv
+uv.lock
 logs/
 secrets.toml
 build/*
+node_modules
+package-lock.json
+pyproject.toml

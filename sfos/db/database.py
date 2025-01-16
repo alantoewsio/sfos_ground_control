@@ -78,7 +78,7 @@ class Database:
             _ex.DatabaseError: If a cursor cannot be obtained
 
         Returns:
-            Cursor: _description_
+            Cursor: Database cursor
         """
         if self.cursor:
             return self.cursor

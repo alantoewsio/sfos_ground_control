@@ -1,9 +1,10 @@
+*.crt
+*.csv
+*.env
+*.key
 *.whl
 *.zip
 *.sqlite3
-*.crt
-*.key
-*.env
 firewalls.yaml
 firewalls.yml
 __pycache__/

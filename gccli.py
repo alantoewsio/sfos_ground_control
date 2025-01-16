@@ -14,7 +14,15 @@ from sfos import agent as _agent
 
 def main() -> None:
     """Main agent startup"""
-    _agent.start_agent()
+    try:
+        _agent.start_agent()
+        return 0
+    except KeyError as e:
+        print(f"Key error: {e}")
+        return 1
+    except _agent.methods.AgentMethodsError as e:
+        print(f"Error: {e}")
+        return 2
 
 
 if __name__ == "__main__":

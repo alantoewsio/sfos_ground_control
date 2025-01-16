@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -11,6 +11,8 @@ License.
 
 # pylint: disable=broad-exception-caught
 
+import csv
+from sqlite3 import Cursor
 import prettytable
 from sfos.base.db import init_db
 from sfos.agent.cli_args import read_root_args
@@ -28,6 +30,25 @@ from sfos.logging import (
 init_logging(level=Level.INFO)
 loginfo("Starting init_db")
 db = init_db()
+
+def write_csv(query: str, filename: str = "results.csv"):
+    cursor = db.get_cursor()
+    cursor.execute(query)
+    data = cursor.fetchall()
+    columns = list(map(lambda x: x[0], cursor.description))
+    with open(filename, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(columns)
+        writer.writerows(data)
+    print(f"Data written to {filename}")
+
+
+def print_table(query: str):
+    cursor = db.get_cursor()
+    cursor.execute(query)
+    cursor.fetchall()
+    table = prettytable.from_db_cursor(cursor)
+    print(table)
 
 
 def start_agent() -> None:
@@ -50,16 +71,16 @@ def start_agent() -> None:
             ]
             loginfo(action="command", results=command_summary)
             if args.command == "refresh":
-                query = "SELECT * FROM inventory_dashboard"
-                # query = db.load_sql_from_file("dashboard.sql")
+                # query = "SELECT * FROM inventory_view"
+                query = db.load_sql_from_file("dashboard.sql")
                 try:
-                    records = db.execute(query) if query else []
-                    print(f"query 'dashboard.sql' has {len(records)}records")
-                    table = prettytable.from_db_cursor(records)
-                    print(table)
+                    print(f"query: {query}")
+                    write_csv(query)
+                    print_table(query)
+
                 except Exception as e:
                     logerror(e)
-                    print("Actions complete - error displaying summary.")
+                    print(f"Actions complete - error displaying summary. {e}")
 
             failures = []
             for sr in results:

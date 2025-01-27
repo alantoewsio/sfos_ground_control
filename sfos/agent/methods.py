@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -23,7 +23,7 @@ from sfos.base import (
     get_credential as _get_credential,
     GroundControlDB as _db,
 )
-from sfos.logging import logerror
+from sfos.logging import logerror, logdebug
 from sfos.objects import FirewallInfo as _fwi, ServiceAddress as _sa
 from sfos.webadmin import Connector
 
@@ -162,18 +162,36 @@ def read_cred_args(args: _args.Namespace) -> dict:
         dict: _description_
     """
     result = {}
-    result["fw_username"] = (
-        args.username if args.username else os.environ.get("FW_USERNAME", "admin")
-    )
-    result["fw_password"] = (
-        args.password if args.password else os.environ.get("FW_PASSWORD", None)
-    )
-    if args.use_vault:
-        result["fw_password"] = _get_credential(
+    env_user = os.environ.get("FW_USERNAME", None)
+    if args.username:
+        logdebug("Found username in args:", args.username)
+        result["fw_username"] = args.username
+    elif env_user:
+        logdebug("Found username in env:FW_USERNAME: ", env_user)
+        result["fw_username"] = env_user
+    else:
+        logdebug("Using default username choice: admin")
+
+    env_pass = os.environ.get("FW_PASSWORD", None)
+    if args.password:
+        logdebug(f"Found password in args: len({len(args.password)})")
+        result["fw_password"] = args.password
+    elif env_pass:
+        logdebug(f"Found password in 'env:FW_PASSWORD': len={len(env_pass)}")
+        result["fw_password"] = env_pass
+    elif args.use_vault:
+        vault_pass = _get_credential(
             mount_point=os.environ["VAULT_MOUNT_POINT"],
             secret_path=os.environ["VAULT_SECRET_PATH"],
             key=os.environ["VAULT_SECRET_KEY"],
         )
+        if vault_pass:
+            logdebug(
+                f"Found password in vault path {os.environ['VAULT_SECRET_PATH']}: "
+                f"len={len(vault_pass)}"
+            )
+            result["fw_password"] = vault_pass
+
     return result
 
 
@@ -200,7 +218,7 @@ def _convert_inventory_to_connectors(inventory: list) -> list[Connector]:
         except Exception as e:
             logerror(f"Error reading inventory record {fw} - {e}")
     count = len(firewalls)
-    print(f"{count} {"firewall" if count == 1 else "firewalls"} found in inventory")
+    logdebug(f"{count} {'firewall' if count == 1 else 'firewalls'} found in inventory")
     return firewalls
 
 
@@ -222,7 +240,6 @@ def _fill_missing_values_with_defaults(
     username: str = None,
     password: str = None,
 ) -> list:
-
     for fw in yaml_dict:
         if "hostname" not in fw:
             fw["hostname"] = hostname
@@ -289,19 +306,20 @@ def read_firewall_inventory(args: _args.Namespace, creds: dict) -> list[Connecto
         list[Connector]: _description_
     """
     fw_inventory = []
-
+    verify_tls = False if args.insecure else str(args.verify_tls).lower() == "true"
     if args.hostname:
         # use a single firewall for this run
-        print("using Hostname")
-        fw_inventory.append(
-            {
-                "hostname": args.hostname,
-                "port": args.port,
-                "verify_tls": str(args.verify_tls).lower() == "true",
-                "username": creds["fw_username"],
-                "password": creds["fw_password"],
-            },
-        )
+        for hostname in args.hostname:
+            fw_inventory.append(
+                {
+                    "hostname": hostname,
+                    "port": args.port,
+                    "verify_tls": verify_tls,
+                    "username": creds["fw_username"],
+                    "password": creds["fw_password"],
+                },
+            )
+        print("Loaded firewall inventory from args")
     elif args.inventory:
         fw_inventory = []
         for inv in args.inventory:
@@ -310,6 +328,7 @@ def read_firewall_inventory(args: _args.Namespace, creds: dict) -> list[Connecto
                 _parse_inv(yaml_list, args, creds),
                 fw_inventory,
             )
+        logdebug("Loaded firewall inventory from yml")
     else:
         print("no host found:", args.inventory, args.hostname)
     if not fw_inventory:

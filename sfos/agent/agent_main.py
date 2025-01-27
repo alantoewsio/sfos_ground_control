@@ -12,14 +12,15 @@ License.
 # pylint: disable=broad-exception-caught
 
 import csv
-from sqlite3 import Cursor
 import prettytable
+from datetime import datetime
 from sfos.base.db import init_db
 from sfos.agent.cli_args import read_root_args
 from sfos.agent.actions import run_cli_command, run_query, run_scripts
 from sfos.logging import (
     Level,
     log,
+    logdebug,
     loginfo,
     logerror,
     init_logging,
@@ -31,7 +32,8 @@ init_logging(level=Level.INFO)
 loginfo("Starting init_db")
 db = init_db()
 
-def write_csv(query: str, filename: str = "results.csv"):
+
+def write_csv(query: str, filename: str = "output.csv"):
     cursor = db.get_cursor()
     cursor.execute(query)
     data = cursor.fetchall()
@@ -40,13 +42,13 @@ def write_csv(query: str, filename: str = "results.csv"):
         writer = csv.writer(f)
         writer.writerow(columns)
         writer.writerows(data)
-    print(f"Data written to {filename}")
+    logdebug(f"Data written to csv file:{filename}")
 
 
 def print_table(query: str):
     cursor = db.get_cursor()
     cursor.execute(query)
-    cursor.fetchall()
+    # cursor.fetchall()
     table = prettytable.from_db_cursor(cursor)
     print(table)
 
@@ -64,7 +66,6 @@ def start_agent() -> None:
                 rest=str(args),
                 target_count=len(firewalls),
             )
-
             results = run_cli_command(firewalls, args, rest, db)
             command_summary = [
                 (r.fw.address.address, r.success, r.error) for r in results
@@ -74,9 +75,16 @@ def start_agent() -> None:
                 # query = "SELECT * FROM inventory_view"
                 query = db.load_sql_from_file("dashboard.sql")
                 try:
-                    print(f"query: {query}")
-                    write_csv(query)
+                    now = datetime.now()
+                    now.strftime("%Y%m%d-%H-%M-%S")
+                    filename = f"refresh_{now.strftime('%Y%m%d-%H-%M-%S')}.csv"
+                    logdebug(f"Refresh done. printing results from query: {query}")
+                    write_csv(
+                        query,
+                        filename=filename,
+                    )
                     print_table(query)
+                    print(f"Results saved to '{filename}'")
 
                 except Exception as e:
                     logerror(e)

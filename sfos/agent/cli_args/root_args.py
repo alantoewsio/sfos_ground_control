@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -44,7 +44,16 @@ def setup_root_arguments(parser: _ap) -> _ap:
 
     help = "Default: 4444, WebAdmin port (Allowed values: 1-65535)"
     conn.add_argument("-p", "--port", type=int, default=4444, dest="port", help=help)
-
+    help = (
+        "Disables TLS checking if set. Same as '--verify_tls False'. "
+        "Overrides verify_tls if both are set. "
+        "CAUTUION: Disabling TLS checks is insecure and should be avoided."
+    )
+    conn.add_argument(
+        "--insecure",
+        action="store_true",
+        help=help,
+    )
     help = (
         "Default: True, Use '--verify_tls False' if WebAdmin cert is self-signed. "
         "CAUTUION: Disabling TLS checks is insecure and should be avoided."
@@ -58,14 +67,25 @@ def setup_root_arguments(parser: _ap) -> _ap:
         choices=["True", "true", "False", "false"],
         help=help,
     )
+
     auth = parser.add_argument_group("Credential options")
     help = "Default: 'admin', Prefers env var 'fw_username' if set"
-    auth.add_argument("--username", nargs=1, dest="username", required=False, help=help)
+    auth.add_argument(
+        "--username",
+        nargs="?",
+        dest="username",
+        default=None,
+        help=help,
+    )
 
     passwd = auth.add_mutually_exclusive_group()
     help = "Prefers env var 'fw_password' if set. Cannot be used with '--use-vault'"
     passwd.add_argument(
-        "--password", nargs=1, dest="password", required=False, help=help
+        "--password",
+        nargs="?",
+        dest="password",
+        default=None,
+        help=help,
     )
 
     help = (

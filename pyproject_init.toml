@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sfos-ground-control"
+version = "1.0.0"
+description = "Sophos Ground Control Firewall Monitoring and Management"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = "==3.12.8"
+authors = [
+    {name = "Alan Toews", email = "alan.toews@sophos.com"},
+]
+maintainers = [
+    {name = "Alan Toews", email = "alan.toews@sophos.com"},
+]
+keywords = ["Sophos", "Firewall", "op-prem", "manage", "monitor"]
+classifiers= [
+    # How mature is this project? Common values are
+    #   3 - Alpha
+    #   4 - Beta
+    #   5 - Production/Stable
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = []
+[project.urls]
+"Homepage" = "https://github.com/alantoewsio/sfos_ground_control"
+"Bug Reports" = "https://github.com/alantoewsio/sfos_ground_control/issues"
+"Source" = "https://github.com/alantoewsio/sfos_ground_control"
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.11.1",
+    "pytest==8.0.1",
+    "wheel>=0.45.1",
+]

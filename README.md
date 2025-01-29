@@ -2,48 +2,36 @@
 
 An Automation tool for SFOS WebAdmin
 
-## Installation
+## Setup Prerequisites
 
-## 1: Download from Github
+## Download from Github
 
 ```shell
 git clone https://github.com/alantoewsio/sfos_ground_control.git
 ```
 
-## 2a: Install Using Anaconda
+### uv: Recommended Install
 
-### I: Install Anaconda
-
-- Download from https://docs.anaconda.com/anaconda/install/
+- [Install using recommended instructions](https://docs.astral.sh/uv/getting-started/installation/) (On windows, requires running powershell scripts)
 - follow installation instructions
+- Test that uv is installed correctly by running `uv --version` from a new shell window
 
-### II: Create a python environment using conda
+### uv: Alternate Install
 
-After installation, create the conda environment from the environment.yml stored in the root of the project:
+- [Alternate: directly download binaries](https://github.com/astral-sh/uv/releases) (Choose the correct package for your OS)
+- Extract binaries
+- Open a powershell prompt
+- Windows: navigate to the path where the extracted binaries are located, and run:
 
-```shell
-conda env create -f environment.yml
-```
+  ```pwsh
 
-## 2b: Install using venv
 
-### I: Create virtual environment
 
-- Open a command prompt in the folder SGC is installed in, then run the following:
+  ```
 
-```shell
-python -m venv .
-```
+- Place exe in system path folder, or in the root of the project folder closed
 
-### II: Install requirements
-
-- From a command prompt in the SFC install folder, and with the venv loaded, run:
-
-```shell
-pip install -r requirements.txt
-```
-
-Respond to any prompts raised by pip install.
+## Installation
 
 ## 3: Setup
 

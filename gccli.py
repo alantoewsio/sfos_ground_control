@@ -9,7 +9,7 @@ the License for the specific language governing permissions and limitations unde
 License.
 """
 
-# pylint: disable=broad-exception-caught_
+import sys
 import dotenv
 
 from sfos import agent as _agent
@@ -32,4 +32,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

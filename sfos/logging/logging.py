@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -134,6 +134,7 @@ def logerror(
     **kwargs: str | int | list | bool | None,
 ) -> None | Exception | object:
     """Write an error log entry"""
+
     return log(*messages, level=Level.ERROR, stacklevel=stacklevel + 1, **kwargs)
 
 
@@ -228,7 +229,7 @@ def log(
     log_msgs.extend(kw_args)
     for msg in log_msgs:
         if not isinstance(msg, str):
-            print(type(msg), msg)
+            print("msg object is not string, it's", type(msg))
 
     message = " ".join(log_msgs) if log_msgs else ""
     message = message.replace("\r", "").replace("\n", "\\n")

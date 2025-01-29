@@ -38,3 +38,6 @@ dev = [
     "pytest==8.0.1",
     "wheel>=0.45.1",
 ]
+
+[tool.setuptools]
+packages = ["sfos"]

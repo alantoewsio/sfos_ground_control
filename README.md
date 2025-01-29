@@ -15,6 +15,7 @@ git clone https://github.com/alantoewsio/sfos_ground_control.git
 - [Install using recommended instructions](https://docs.astral.sh/uv/getting-started/installation/) (On windows, requires running powershell scripts)
 - follow installation instructions
 - Test that uv is installed correctly by running `uv --version` from a new shell window
+- or: run `. online_uv_setup` from the project rood directory
 
 ### uv: Alternate Install
 
@@ -23,25 +24,14 @@ git clone https://github.com/alantoewsio/sfos_ground_control.git
 - Open a powershell prompt
 - Windows: navigate to the path where the extracted binaries are located, and run:
 
-  ```pwsh
-
-
-
-  ```
+  - `. manual_uv_setup.ps1`
 
 - Place exe in system path folder, or in the root of the project folder closed
-
-## Installation
 
 ## 3: Setup
 
 - From project directory
-  - On Windows powershell: run setup.ps1
-  - On Linux bash shell: run setup.sh
-- Setup script will:
-  - Download and install uv
-  - Setup Python 3.12 virtual environment
-  - Install requirements.txt dependencies
+  - On Windows powershell: run `. setup_environment.ps1`
 
 ## 4: Create firewall inventory
 
@@ -106,7 +96,7 @@ Each firewall to be monitored must be supplied a valid username and password to 
 
 Username, port, and verify_tls each have system defauls set that will be used if no other values are given. For each connection field, default values will be used when available, unless they are supplied in the yaml file. Defaults set via environment variables or command line arguments will override system defaults and be used if no settings are present in the firewall inventory.
 
-## Running gccli.py
+## Running gccli ('gccli.exe' or 'uv run gccli.py')
 
 gccli.py's primary task is to collect and store firewall details. When run with no other actions set, it will attempt to contact each firewall and collect a snapshot of several core info fields.
 
@@ -145,13 +135,17 @@ Usage Examples:
 Simple update - assumes all credential information is supplied by environment variables or in firewalls.yaml.
 
 ```shell
-python gccli.py -i firewalls.yaml
+gccli.exe -i firewalls.yaml
+- or -
+uv gccli.py -i firewalls.yaml
 ```
 
 Results will be added to grond_control.sqlite3 database file.
 
 ```shell
-python gccli.py -i firewalls.yaml --username gcuser -c refresh
+gccli.exe -i firewalls.yaml --username gcuser -c refresh
+- or -
+uv gccli.py -i firewalls.yaml --username gcuser -c refresh
 ```
 
 Launching the web user interface:

@@ -231,7 +231,7 @@ def log(
         if not isinstance(msg, str):
             print("msg object is not string, it's", type(msg))
 
-    message = " ".join(log_msgs) if log_msgs else ""
+    message = " ".join(str(log_msgs)) if log_msgs else ""
     message = message.replace("\r", "").replace("\n", "\\n")
     if ret_error:
         logging.exception(ret_error, stacklevel=stacklevel + 1)

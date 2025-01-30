@@ -12,7 +12,7 @@ SELECT
     version,
     company,
     error,
-    last_Online,
+    last_online,
     days_ago,
     fails,
     (

@@ -1,2 +1,2 @@
 -- base/db/sql/dashboard.sql
-SELECT * from inventory_view
+SELECT * from inventory_dashboard

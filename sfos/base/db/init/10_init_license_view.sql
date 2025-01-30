@@ -39,8 +39,8 @@ FROM
             type,
             bundle,
             name,
-            start_date,
-            expiry_date,
+            strftime ('%Y-%m-%d', start_date) as 'start_date',
+            strftime ('%Y-%m-%d', expiry_date) as 'expiry_date',
             deactivation_reason,
             CAST(
                 min(
@@ -51,7 +51,7 @@ FROM
             CAST(
                 julianday (expiry_date) - julianday (current_timestamp) AS int
             ) AS remaining_days,
-            updated
+            strftime ('%Y-%m-%d %H:%M:%S', updated) as 'updated'
         FROM
             licenses
         ORDER BY

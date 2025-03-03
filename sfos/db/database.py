@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -22,7 +22,7 @@ from typing import Any
 from sfos.db.query import Select
 from sfos.db.data_formatting import qs, rs
 from sfos.static import exceptions as _ex
-from sfos.logging import Level, log, logtrace, logdebug, logerror
+from sfos.logging import Level, log, logtrace, logdebug, logerror, loginfo
 
 
 class DBError(Exception):
@@ -36,7 +36,9 @@ class Database:
         self.filename = filename
         self.connection: Connection | None = None
         self.cursor: Cursor | None = None
-        logdebug(f"initializing db - file:'{filename}'")
+        logdebug(
+            f"Database __init__('{filename}') {f'with {len(init_sql)} init scripts' if isinstance(init_sql, list) else ''}"
+        )
         if init_sql:
             if isinstance(init_sql, str):
                 count = 1
@@ -44,6 +46,7 @@ class Database:
                 count = len(init_sql)
 
             logdebug(f"Executing init_sql ({count} scripts)")
+
             self.execute(init_sql)
         else:
             logdebug("No init_sql to execute")
@@ -158,7 +161,7 @@ class Database:
             self.close_connection()
         except Exception as e:
             log(Level.ERROR, type=str(type(e)), message=str(e))
-        if self.filename and os.path.exists(self.filename):
+        if self.filename and Path(self.filename).is_file():
             return False
         return True
 
@@ -214,11 +217,12 @@ class Database:
             str: contents of sql file
         """
         filename = filename if filename.endswith(".sql") else f"{filename}.sql"
-        qfile = Path(path, filename)
-        if qfile.exists():
+        qfile = Path(filename)
+        qfile = Path(path, filename) if not qfile.is_file() else qfile
+        if qfile.is_file():
             result = qfile.read_text(encoding="utf-8")
         else:
-            if not os.path.exists(path):
+            if not Path(path).is_dir():
                 raise _ex.PathNotFound(f"Path '{path}' not found")
             raise _ex.FileNotFound(f"File '{qfile}' not found")
 
@@ -234,9 +238,7 @@ class Database:
         Returns:
             Select: _description_
         """
-        return Select(
-            from_file=filename, _execute=self.execute, _cursor=self.get_cursor
-        )
+        return Select(from_file=filename, _execute=self.execute, _cursor=self.get_cursor)
 
     def list_tables(self, close: bool = True) -> list:
         """_summary_
@@ -255,7 +257,7 @@ class Database:
 
         if close:
             self.close_connection()
-        return [item for item, in result]
+        return [item for (item,) in result]
 
     def list_views(self, close: bool = True) -> list:
         """_summary_
@@ -274,7 +276,7 @@ class Database:
 
         if close:
             self.close_connection()
-        return [item for item, in result]
+        return [item for (item,) in result]
 
     def list_table_cols(self, table_name: str, close: bool = True) -> list:
         """_summary_
@@ -398,6 +400,9 @@ class Database:
             statements = [statements]
 
         for statement in statements:
+            if Path(statement).is_file():
+                loginfo(f"Executing SQL Script '{statement}'")
+                statement = self.load_sql_from_file(statement)
             results.append(self._execute(statement, close, params))
         return results
 
@@ -422,7 +427,6 @@ class Database:
         """
         try:
             cursor = self.get_cursor()
-
             if statement.count(";") > 1 and not params:
                 logdebug(
                     "Using cursor.executescript",
@@ -434,14 +438,21 @@ class Database:
                 logdebug("Using cursor.execute")
                 execute = cursor.execute
 
-            if params:
-                logtrace(sql=statement, params=params)
-                execute(statement, params)
-            else:
-                logtrace(sql=statement, params=str(None))
-                execute(statement)
+            # Reworked to catch execution errors and to simplify logic
+            try:
+                args = [statement, params] if params else [statement]
+                logtrace(
+                    method=execute.__name__,
+                    sql=statement,
+                    params=params if params else str(None),
+                )
+                execute(*args)
+                results = cursor.fetchall()
+            except sqlite3.IntegrityError as e:
+                logerror(e)
+                print("Database operation error:", str(e), f"data={params}")
+                results = []
 
-            results = cursor.fetchall()
             if close:
                 self.close_connection()
 

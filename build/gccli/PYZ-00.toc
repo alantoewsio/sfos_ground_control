@@ -1659,6 +1659,11 @@
    'C:\\Users\\AlanToews\\OneDrive - Sophos '
    'Ltd\\Projects\\sfos_ground_control_prod\\.venv\\Lib\\site-packages\\numpy\\_core\\strings.py',
    'PYMODULE'),
+  ('numpy._core.tests', '-', 'PYMODULE'),
+  ('numpy._core.tests._natype',
+   'C:\\Users\\AlanToews\\OneDrive - Sophos '
+   'Ltd\\Projects\\sfos_ground_control_prod\\.venv\\Lib\\site-packages\\numpy\\_core\\tests\\_natype.py',
+   'PYMODULE'),
   ('numpy._core.umath',
    'C:\\Users\\AlanToews\\OneDrive - Sophos '
    'Ltd\\Projects\\sfos_ground_control_prod\\.venv\\Lib\\site-packages\\numpy\\_core\\umath.py',

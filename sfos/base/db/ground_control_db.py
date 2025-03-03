@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -12,14 +12,15 @@ License.
 import os
 from datetime import datetime
 import sqlite3
+from pathlib import Path
 
 from sfos.objects.firewall_info import FirewallInfo
 from sfos.static import exceptions as _ex
 from sfos.db import Database
 from sfos.webadmin.connector import Connector as _conn, SfosResponse as _sresp
-from sfos.logging import logtrace, logerror
+from sfos.logging import logtrace, logerror, loginfo
 
-SQL_INIT_PATH = "./sfos/base/db/init"
+DEFAULT_SQL_INIT_PATH = "./sfos/base/db/init"
 
 
 class GroundControlDB(Database):
@@ -31,13 +32,17 @@ class GroundControlDB(Database):
 
     def __init__(self, filename: str | None = None):
         if not filename:
-            filename = os.getenv("GROUND_CONTROL_DB_KEY", "./ground_control.sqlite3")
+            filename = os.getenv("GC_DATABASE_FILE", "./ground_control.sqlite3")
+        loginfo(f"Initializing database file '{filename}'")
         # Run database init scripts
+        SQL_INIT_PATH = os.getenv("GC_SQL_INIT_PATH", DEFAULT_SQL_INIT_PATH)
         logtrace(f"fetching init scripts from  {SQL_INIT_PATH}")
         init_scripts = self.list_sql_files(SQL_INIT_PATH)
         logtrace(f"found {len(init_scripts)} sql init scripts: {init_scripts}")
         sql_init_scripts = [
-            self.load_sql_from_file(file, path=SQL_INIT_PATH) for file in init_scripts
+            str(Path(SQL_INIT_PATH, file))
+            for file in init_scripts
+            # self.load_sql_from_file(file, path=SQL_INIT_PATH) for file in init_scripts
         ]
         super().__init__(filename, sql_init_scripts)
 
@@ -150,7 +155,6 @@ class GroundControlDB(Database):
                 except sqlite3.OperationalError as e:
                     logerror(error=str(e))
                 except sqlite3.ProgrammingError as e:
-
                     logerror(error=str(e))
 
         else:

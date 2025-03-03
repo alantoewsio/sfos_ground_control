@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -23,7 +23,7 @@ from sfos.agent.cli_args.report_args import setup_report_arguments as _setup_rep
 from sfos.agent.cli_args.script_args import setup_script_arguments as _setup_script
 from sfos.agent.cli_args.root_args import setup_root_arguments as _setup_root
 from sfos.webadmin.connector import Connector
-from sfos.logging.logging import Level, init_logging
+from sfos.logging.logging import Level, init_logging, logtrace
 
 ArgActions: TypeAlias = Literal[
     "info",
@@ -112,45 +112,74 @@ def read_root_args(
         "noop": None,
         "help": None,
     }
-    args, rest = p_root.parse_known_args(root_args)
+    main_args, action_args = p_root.parse_known_args(root_args)
 
     # Set log level
-    if args.verbose:
-        print("DEBUG MODE")
+    if main_args.verbose:
+        print("Runing with DEBUG logging enabled")
         init_logging(Level.DEBUG)
-    elif args.trace:
-        print("TRACE MODE")
+    elif main_args.trace:
+        print("Running with TRACE logging enabled")
         init_logging(Level.TRACE)
     else:
         init_logging(Level.INFO)
 
-    # Show cli help if requested, or pass -h to command parsers
-    if args.help:
-        rest.append("-h")
+    # If help flag set, append it to action_args, in case
+    # another action command is provided, so the right
+    # action parser can respond to help requests
+    if main_args.help:
+        logtrace("Help argument found. adding -h to action_args")
+        action_args.append("-h")
         firewalls = []
+    elif not main_args.query and not main_args.report:
+        # load default credentials if provided, and firewall inventory
+        # Not required for queries and reports
+        logtrace("Checking arguments for creds and firewalls")
+        creds = read_cred_args(main_args)
+        firewalls = read_firewall_inventory(main_args, creds)
     else:
-        creds = read_cred_args(args)
-        firewalls = read_firewall_inventory(args, creds)
+        firewalls = []
 
-    # Call handler for the users action
-    if args.command:
+    # Determne which action to perform
+    if main_args.command:
+        logtrace("command argument found. root action = 'command'")
         action = "command"
-    elif args.query:
+    elif main_args.query:
+        logtrace("query argument found. root action = 'query'")
         action = "query"
-    elif args.report:
+    elif main_args.report:
+        logtrace("report argument found. root action = 'report'")
         action = "report"
-    elif args.script:
+    elif main_args.script:
+        logtrace("script argument found. root action = 'script'")
         action = "script"
-    elif args.noop:
+    elif main_args.noop:
+        logtrace("noop argument found. root action = 'noop'")
         action = "noop"
-    elif args.help:
+    elif main_args.help:
+        logtrace("help argument found. root action = 'help'")
         p_root.print_help()
         action = "Help"
-        rest = []
-    else:
+        action_args = []
+    elif firewalls:
+        logtrace("Firewall inventory found. Defaulting to action = 'command' 'refresh'")
+        # Default choice if host or inventory was provided
         action = "command"
-        rest = ["refresh"]
+        action_args = ["refresh"]
+    else:
+        logtrace("No action argument or inventory. Defaulting to action = 'Help'")
+        # Show root help if no other arguments given
+        p_root.print_help()
+        action = "Help"
+        action_args = []
 
+    # Select the correct argument parser for the users desired action
     parser = p_dict[action]
-    act_args, act_rest = parser.parse_known_args(rest) if parser else ([], [])
-    return firewalls, act_args, action, act_rest
+
+    # Parse the given arguments and return:
+    # firewalls, action arguments, action name,
+    # and any remaining arguments
+    action_args, remaining_args = (
+        parser.parse_known_args(action_args) if parser else ([], [])
+    )
+    return firewalls, action_args, action, remaining_args

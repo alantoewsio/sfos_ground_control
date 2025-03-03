@@ -1,0 +1,12 @@
+[
+    {"hostname": "offline1.toews.io"},
+    {"hostname": "offline2.toews.io"},
+    {"hostname": "offline3.toews.io"},
+    {
+        "hostname": "boston.toews.io",
+        "username": "admin",
+        "password": "Sophos=111",
+        "verify_tls": "false"
+    },
+    {"hostname": "offline4.toews.io"}
+]

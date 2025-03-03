@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -28,7 +28,6 @@ def init_db(filename: str | None = None) -> _db:
     logtrace(action="init_db")
     instance.db = None
     if filename:
-        log(Level.INFO, f"Initializing db '{filename}'")
         instance.db = _db(filename)
     else:
         instance.db = _db()

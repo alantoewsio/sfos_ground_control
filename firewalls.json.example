@@ -1,0 +1,21 @@
+[
+  {
+    "hostname": "example-host1.network.com"
+  },
+  {
+    "hostname": "example-host2.network.com",   
+    "verify_tls": false
+  },
+  {
+    "hostname": "example-host3.network.com",
+    "username": "firewalladmin",
+    "password": "secret_value_def"
+  },
+  {
+    "hostname": "example-host4.network.com",
+    "port": 4444,
+    "verify_tls": false,
+    "username": "firewalluser",
+    "password": "secret_value_xyz"
+  }
+]

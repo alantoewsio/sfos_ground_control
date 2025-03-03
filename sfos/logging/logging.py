@@ -1,4 +1,5 @@
-"""SFOS Ground Control
+"""SFOS Ground Control.
+
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -12,21 +13,23 @@ License.
 # pylint: disable=broad-exception-caught
 from __future__ import annotations
 
-
 import inspect
 import json
-import json_fix  # noqa: F401
 import logging
 import os
-
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from logging.handlers import RotatingFileHandler
-from typing import Callable, TypeVar, TypeAlias
+from typing import Callable, TypeAlias, TypeVar
+
+# Disabled unused import error, since importing json_fix activates it.
+# It does not get called explicitly.
+import json_fix  # noqa: F401
 from attr import dataclass
 from typing_extensions import ParamSpec
 
-from sfos.static import Level, constants as _c
 from sfos.logging.methods import resp2dict
+from sfos.static import Level
+from sfos.static import constants as _c
 
 # Generics for decorators
 P = ParamSpec("P")
@@ -36,7 +39,7 @@ MessageType: TypeAlias = str | list | object | Level
 
 @dataclass
 class State:
-    """Global variables"""
+    """Global variables."""
 
     init_called: bool = False
     timers: dict = {}
@@ -63,8 +66,8 @@ def caller_name(stacklevel: int = 1) -> str:
     return inspect.stack()[stacklevel][3]
 
 
-def init_logging(level: Level):
-    """Initialize logging"""
+def init_logging(level: Level) -> None:
+    """Initialize default logger."""
     # global LOG_PATH, log_file, INIT_CALLED
     if not os.path.exists(LOG_PATH):
         os.makedirs(LOG_PATH)
@@ -228,10 +231,14 @@ def log(
     log_msgs = positional_args
     log_msgs.extend(kw_args)
     for msg in log_msgs:
-        if not isinstance(msg, str):
+        if not isinstance(msg, str) and hasattr(msg, "__str__"):
+            msg = str(msg)
+        elif not isinstance(msg, str):
             print("msg object is not string, it's", type(msg))
-
-    message = " ".join(str(log_msgs)) if log_msgs else ""
+    if isinstance(log_msgs, str):
+        message = log_msgs
+    else:
+        message = " ".join([str(msg) for msg in log_msgs]) if log_msgs else ""
     message = message.replace("\r", "").replace("\n", "\\n")
     if ret_error:
         logging.exception(ret_error, stacklevel=stacklevel + 1)

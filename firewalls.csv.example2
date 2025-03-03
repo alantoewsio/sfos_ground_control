@@ -1,0 +1,5 @@
+"hostname", "username", "verify_tls"
+example-host.network.com, admin2, false
+example-host2.network.com
+example-host3.network.com
+example-host4.network.com,,false

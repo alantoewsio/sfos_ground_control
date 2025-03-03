@@ -39,7 +39,10 @@ The first step in managing firewalls is creating an inventory of firewalls to ac
 
 ### Firewall Inventory Settings
 
-#### YAML Fields Per Firewall
+Firewall inventory may be stored in yaml, json, or csv formats. 
+Each file format expects the same field names to be used and supports all fields except the hostname as optional.
+
+#### Fields Per Firewall
 
 | Field        | Description                                                                                         |                | Default |
 | ------------ | --------------------------------------------------------------------------------------------------- | -------------- | ------- |
@@ -53,13 +56,14 @@ Default credentials and settings may be stored in environment variables, or in a
 
 #### Supported Environment Variables
 
-| Name                | Description                 |
-| ------------------- | --------------------------- |
-| `fw_username`       | WebAdmin username           |
-| `fw_password`       | WebAdmin password           |
-| `VAULT_MOUNT_POINT` | Hashicorp secure store info |
-| `VAULT_SECRET_PATH` | Hashicorp secure store info |
-| `VAULT_SECRET_KEY`  | Hashicorp secure store info |
+| Name                | Description                          | Defaults                 |
+| ------------------- | ------------------------------------ | ------------------------ |
+| `fw_username`       | WebAdmin username                    |                          |
+| `fw_password`       | WebAdmin password                    |                          |
+| `VAULT_MOUNT_POINT` | Hashicorp secure store info          |                          |
+| `VAULT_SECRET_PATH` | Hashicorp secure store info          |                          |
+| `VAULT_SECRET_KEY`  | Hashicorp secure store info          |                          |
+| `GC_DATABASE_FILE`  | Filename used for storing event data | ./ground_control.sqlite3 |
 
 #### Supported Base Command Line Arguments
 
@@ -76,21 +80,94 @@ Default credentials and settings may be stored in environment variables, or in a
 
 ### Examples
 
+#### YAML file example with various field combinations
+
+Define only the hostname and any fields to be defined per host. Fields may be included or exclude per record, as needed.
+
+> YAML files must have a '.yaml' or '.yml' file extension
+
 ```yaml
-- hostname: 10.23.32.1
+- hostname: example-host1.network.com
+- hostname: example-host2.network.com
+  verify_tls: false
+- hostname: example-host3.network.com
+  username: firewalladmin
+  password: secret_value_def
+- hostname: example-host4.network.com
   port: 4444
-- hostname: firewall-1.mydomain.com
-  verify_tls: False
-- hostname: firewall-2.mydomain.com
-  port: 5555
-  username: someuser
-  password: mysecretpassword
-  verify_tls: False
+  verify_tls: false
+  username: firewalluser
+  password: secret_value_xyz
+
+```
+
+#### JSON file example with various field combinations
+
+Define only the hostname and any fields to be defined per host. Fields may be included or exclude per record, as needed.
+
+Field names, and string values must be quoted. integer and boolean values must not be quoted.
+
+fields and firewall records must each be separated with a comma.
+
+> JSON files must have a '.json' file extension
+
+```json
+[
+  {
+    "hostname": "example-host1.network.com"
+  },
+  {
+    "hostname": "example-host2.network.com",   
+    "verify_tls": false
+  },
+  {
+    "hostname": "example-host3.network.com",
+    "username": "firewalladmin",
+    "password": "secret_value_def"
+  },
+  {
+    "hostname": "example-host4.network.com",
+    "port": 4444,
+    "verify_tls": false,
+    "username": "firewalluser",
+    "password": "secret_value_xyz"
+  }
+]
+```
+
+#### CSV file examples
+
+Define only the hostname and any fields to be defined per host. Fields MUST be included or excluded in the header row, if theyu are to be included for any firewall records.
+
+Field names and values do not need to be quoted unless the value contains a separator character ','
+
+Columns defined in the header do not need to be included in each row, if no following columns will have theior values set.
+
+> CSV files must have a '.csv' file extension
+
+#### CSV file with all fields defined
+
+```csv
+"hostname", "port", "username", "password", "verify_tls"
+example-host.network.com
+example-host2.network.com,,, secret_value_abc, false
+example-host3.network.com,, firewalladmin, secret_value_def
+example-host4.network.com, 4444, firewalluser, secret_value_xyz, false
+```
+
+#### CSV file with fewer columns
+
+```csv
+hostname, username, verify_tls
+example-host.network.com, admin2, false
+example-host2.network.com
+example-host3.network.com
+example-host4.network.com,,false
 ```
 
 Each firewall to be monitored must be supplied a valid username and password to login. Credentials may be provided in several ways:
 
-- Per firewall via yaml file
+- Per firewall via yaml/json/csv file
 - Defaults may be set as environment variables
 - Defaults may be set with command line arguments
 
@@ -140,7 +217,7 @@ gccli.exe -i firewalls.yaml
 uv gccli.py -i firewalls.yaml
 ```
 
-Results will be added to grond_control.sqlite3 database file.
+Results will be added to ground_control.sqlite3 database file.
 
 ```shell
 gccli.exe -i firewalls.yaml --username gcuser -c refresh

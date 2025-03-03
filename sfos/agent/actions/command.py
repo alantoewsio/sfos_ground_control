@@ -13,7 +13,7 @@ import argparse as _args
 from sfos.agent.script_objs import ScriptItem, execute_script_item
 from sfos.base import GroundControlDB as _db
 from sfos.static import exceptions as _ex
-from sfos.logging.logging import loginfo
+from sfos.logging.logging import loginfo, logerror
 from sfos.webadmin.connector import Connector as _conn, SfosResponse as _sresp
 
 
@@ -42,15 +42,18 @@ def run_cli_command(
         loginfo("run_command_def args=", args=args)  # type: ignore
         results = []
         for fw in firewalls:
-            results.extend(
-                run_command_def(
-                    fw,
-                    args.command,
-                    args.object,
-                    args.data,
-                    state,
+            try:
+                results.extend(
+                    run_command_def(
+                        fw,
+                        args.command,
+                        args.object,
+                        args.data,
+                        state,
+                    )
                 )
-            )
+            except Exception as e:
+                logerror(e)
         return results
 
 

@@ -1,9 +1,10 @@
 # Cleanup any leftovers in build folder
-if (verify-path ".\dist") {
+if (test-path ".\dist") {
     Remove-Item ".\dist" -Recurse -Force -Confirm:$false
 }
-if (verify-path ".\gccli.exe") {
-    Remove-Item ".\gccli.exe" -Recurse -Force -Confirm:$false
+if (test-path ".\gccli.exe") {
+    Move-Item ".\gccli.exe" ".\gccli.prev.exe"
+    # Remove-Item ".\gccli.exe" -Recurse -Force -Confirm:$false
 }
 # make sure dev requirements are installed before running build process
 remove-item pyproject.toml
@@ -21,8 +22,8 @@ copy-item pyproject_init.toml pyproject.toml
 & uv run pyinstaller -F gccli.py
 
 # Move compiled exe into root folder
-if (verify-path ".\dist\gccli.exe") {
-    Move-Item -Path dist\gccli.exe -destination .
+if (test-path ".\dist\gccli.exe") {        
+    Move-Item -Path .\dist\gccli.exe -destination .
     Write-Host "Done. The contents of dist may be copied as a standalone application."
 } else {
     write-error "Build failed. check output for reason."

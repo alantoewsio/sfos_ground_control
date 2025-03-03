@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -9,9 +9,11 @@ the License for the specific language governing permissions and limitations unde
 License.
 """
 
+import os
 import json
 import sqlite3
 import streamlit as st
+import dotenv
 from streamlit_pills import pills
 
 # from streamlit_autorefresh import st_autorefresh
@@ -25,13 +27,12 @@ from sfos.gui.forms.firewall_details import show_firewall_details
 
 # The function returns a counter for number of refreshes. This allows the
 # ability to make special requests at different intervals based on the count
-
+dotenv.load_dotenv()
+filename = os.getenv("GC_DATABASE_FILE", "./ground_control.sqlite3")
 # Connect to the SQLite database
 conn = sqlite3.connect("ground_control.sqlite3", check_same_thread=False)
 # Load widget definitions
-widget_defs = json.load(
-    open("sfos/gui/queries/dashboard_widgets.json", encoding="utf-8")
-)
+widget_defs = json.load(open("sfos/gui/queries/dashboard_widgets.json", encoding="utf-8"))
 
 
 def _show_fw_callback(serial_number: str):

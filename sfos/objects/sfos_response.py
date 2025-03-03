@@ -12,7 +12,7 @@ License.
 # pylint: disable=broad-exception-caught
 import json
 from datetime import datetime, UTC
-from requests import Response as _response
+from requests import Request as _Request, Response as _response
 from requests.utils import dict_from_cookiejar as _dict_from_cookiejar
 from typing import Any
 
@@ -94,7 +94,19 @@ class SfosResponse:
 
     # @property
     def __str__(self) -> str:
-        return str(self.__repr__)
+        result: str = "SfosResponse:"
+        if self.request:
+            r: _Request = self.request
+            result += f" method:'{r.method}' url:'{r.url}'"
+        if self.response:
+            r: _response = self.response
+            result += f" status:'{r.status_code}' response_url:'{r.url}'"
+        if self.text:
+            result += f" text_length:'{len(self.text)}'"
+        if self.error:
+            result += f" exception_type:'{type(self.error)}' exception:'{self.error}'"
+
+        return result
 
 
 def resp2dict(response: _response, _root: bool = True):

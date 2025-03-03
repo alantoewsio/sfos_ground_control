@@ -2,8 +2,8 @@
 -- /*
 -- Create Inventory table
 CREATE TABLE IF NOT EXISTS inventory (
-    address TEXT UNIQUE,
-    serial_number TEXT UNIQUE,
+    address TEXT,
+    serial_number TEXT,
     model TEXT,
     displayVersion TEXT,
     version TEXT,
@@ -17,11 +17,13 @@ CREATE TABLE IF NOT EXISTS inventory (
     added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_seen TIMESTAMP DEFAULT NULL
+    CONSTRAINT firewall_name_and_serial
+    UNIQUE (address, serial_number) ON CONFLICT REPLACE
 );
 -- */
--- Update table to account for changes
-ALTER TABLE inventory RENAME COLUMN Model TO model;
 
+-- Add the composite unique constraint on (a, b)
+ALTER TABLE example_table ADD CONSTRAINT unique_address_serial_number UNIQUE (unique_address, serial_number);
 -- /*
 -- Create licenses table
 CREATE TABLE IF NOT EXISTS licenses (

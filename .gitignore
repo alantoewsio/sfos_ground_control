@@ -18,3 +18,4 @@ secrets.toml
 node_modules
 package-lock.json
 uv.lock
+/gccli.*.exe

@@ -1,4 +1,5 @@
-"""SFOS Ground Control
+"""SFOS Ground Control.
+
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -10,35 +11,44 @@ License.
 """
 
 # pylint: disable=broad-exception-caught
+from __future__ import annotations
+
 import argparse as _args
+import csv
 import json
 import os
-from datetime import datetime, UTC
-import yaml
+from datetime import UTC, datetime
+from pathlib import Path
 
+import yaml
 from requests import Response
 from requests.utils import dict_from_cookiejar as _dict_from_cookiejar
 
 from sfos.base import (
-    get_credential as _get_credential,
-    GroundControlDB as _db,
+    GroundControlDB as _Db,
 )
-from sfos.logging import logerror, logdebug
-from sfos.objects import FirewallInfo as _fwi, ServiceAddress as _sa
+from sfos.base import (
+    get_credential as _get_credential,
+)
+from sfos.logging import logdebug, logerror
+from sfos.objects import FirewallInfo as _Fwi
+from sfos.objects import ServiceAddress as _Sa
 from sfos.webadmin import Connector
 
 
 class AgentMethodsError(Exception):
-    """Generic error raised by agent method calls"""
+    """Generic error to be raised by agent method calls."""
 
 
 # @log_calls_decorator(Level.DEBUG, True, False)
-def db_save_subs(db: _db | None = None, all_info: _fwi | None = None) -> None:
-    """save to database
+def db_save_subs(db: _Db | None = None, all_info: _Fwi | None = None) -> None:
+    """Save subscription info to database.
 
     Args:
-        db (_db | None, optional): _description_. Defaults to None.
-        all_info (_fwi | None, optional): _description_. Defaults to None.
+
+        db (_Db | None, optional): _description_. Defaults to None.
+        all_info (_Fwi | None, optional): _description_. Defaults to None.
+
     """
     if not (db or all_info):
         return
@@ -53,16 +63,16 @@ def db_save_subs(db: _db | None = None, all_info: _fwi | None = None) -> None:
 
 
 # @log_calls_decorator(Level.DEBUG, True, False)
-def db_save_record(
+def db_Save_record(
     table: str,
-    db: _db | None = None,
+    db: _Db | None = None,
     **data,
 ) -> None:
     """Save to database
 
     Args:
         table (str): _description_
-        db (_db | None, optional): _description_. Defaults to None.
+        db (_Db | None, optional): _description_. Defaults to None.
     """
     if not db:
         return
@@ -75,17 +85,17 @@ def db_save_record(
 
 
 # @log_calls_decorator(Level.DEBUG, True, False)
-def db_save_info(
-    db: _db | None = None,
-    all_info: _fwi | None = None,
-    address: _sa | None = None,
+def db_Save_info(
+    db: _Db | None = None,
+    all_info: _Fwi | None = None,
+    address: _Sa | None = None,
 ) -> None:
     """Save to database
 
     Args:
-        db (_db | None, optional): _description_. Defaults to None.
-        all_info (_fwi | None, optional): _description_. Defaults to None.
-        address (_sa | None, optional): _description_. Defaults to None.
+        db (_Db | None, optional): _description_. Defaults to None.
+        all_info (_Fwi | None, optional): _description_. Defaults to None.
+        address (_Sa | None, optional): _description_. Defaults to None.
     """
     if not (db or address or all_info):
         return
@@ -214,7 +224,6 @@ def _convert_inventory_to_connectors(inventory: list) -> list[Connector]:
                     password=fw["password"],
                 )
             )
-
         except Exception as e:
             logerror(f"Error reading inventory record {fw} - {e}")
     count = len(firewalls)
@@ -222,14 +231,56 @@ def _convert_inventory_to_connectors(inventory: list) -> list[Connector]:
     return firewalls
 
 
-def _read_yaml_file(filename: str) -> dict:
+def _read_inv_file(filename: str) -> list | None:
+    filepath = Path(filename)
+    if not filepath.is_file():
+        print(f"{filename} not found.")
+        return None
+
+    file_extension = filepath.suffix
     try:
-        if filename is None:
+        results = None
+        if file_extension in {".yml", ".yaml"}:
+            results = _read_yaml_file(filename)
+        elif file_extension == ".csv":
+            results = _read_csv_file(filename)
+        elif file_extension == ".json":
+            results = _read_json_file(filename)
+        else:
+            print("Inventory file type unrecognized.")
             return None
-        with open(filename, "r", encoding="utf-8") as fn:
-            return yaml.safe_load(fn)
+
+        logdebug(
+            f"loaded {file_extension} file '{filename}' and found {len(results)} entries."
+        )
+        return results
+
     except Exception as e:
-        print(f"Error reading {filename} - {e}")
+        print(f"Error reading {file_extension} {filename} - {e}")
+
+
+def _read_json_file(filepath: str) -> list[dict]:
+    with open(filepath, mode="r") as fn:
+        return json.load(fn)
+
+
+def _read_csv_file(filepath: str) -> list[dict]:
+    result = []
+    with open(filepath, mode="r", newline="", encoding="utf-8") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            # Skip the row if all values are empty (ignoring whitespace)
+            if not any(value.strip() for value in row.values()):
+                continue
+            result.append(row)
+    return result
+
+
+def _read_yaml_file(filepath: str) -> list[dict]:
+    if filepath is None:
+        return None
+    with open(filepath, "r", encoding="utf-8") as fn:
+        return yaml.safe_load(fn)
 
 
 def _fill_missing_values_with_defaults(
@@ -323,14 +374,16 @@ def read_firewall_inventory(args: _args.Namespace, creds: dict) -> list[Connecto
     elif args.inventory:
         fw_inventory = []
         for inv in args.inventory:
-            yaml_list = _read_yaml_file(inv)
+            inv_list = _read_inv_file(inv)
             fw_inventory = _combine_lists(
-                _parse_inv(yaml_list, args, creds),
+                _parse_inv(inv_list, args, creds),
                 fw_inventory,
             )
         logdebug("Loaded firewall inventory from yml")
     else:
-        print("no host found:", args.inventory, args.hostname)
+        # no host was found in inventory
+        # print("no host found:", args.inventory, args.hostname)
+        pass
     if not fw_inventory:
         raise AgentMethodsError("A hostname or firewall inventory file is required")
 

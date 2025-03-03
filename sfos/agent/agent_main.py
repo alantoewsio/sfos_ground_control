@@ -29,7 +29,7 @@ from sfos.logging import (
 )
 
 init_logging(level=Level.INFO)
-loginfo("Starting init_db")
+loginfo(action="Starting", task="init_db")
 db = init_db()
 
 
@@ -123,10 +123,11 @@ def start_agent() -> None:
             log(Level.INFO, action="script", result_count=len(results))
 
         case "query":
+            print("args", type(args))
             log(
                 Level.INFO,
                 action="query",
-                args=str(list(args)),  # type:ignore
+                # args=str(list(args)),  # type:ignore
                 target_count=len(firewalls),
             )
             results = run_query(args=args, db=db)

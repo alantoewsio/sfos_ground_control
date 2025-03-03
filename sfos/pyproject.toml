@@ -31,7 +31,6 @@ dependencies = [
     "attr==0.3.2",
     "hvac==2.3.0",
     "json-fix==1.0.0",
-    "pandas>=2.2.3",
     "prettytable==3.11.0",
     "pydantic>=2.7.4",
     "python-dotenv==1.0.1",
@@ -61,3 +60,6 @@ dev = [
 # installed, specify them here.
 packages= []
 package-data = { "db_init" = ["*.sql"] }
+
+[tool.ruff]
+target-version = "py312"

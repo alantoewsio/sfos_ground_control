@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -15,9 +15,6 @@ import streamlit as st
 # import pandas as pd
 
 from sfos.gui.queries.query import run_query, load_query_from_file
-
-# from sfos.gui.views.editor import edit_record
-# conn = sqlite3.connect("ground_control.sqlite3")
 
 
 @st.dialog("Firewall Details", width="large")

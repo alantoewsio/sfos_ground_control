@@ -1,0 +1,2 @@
+- hostname: boston.toews.io
+  verify_tls: false

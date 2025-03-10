@@ -14,12 +14,11 @@ import dotenv
 
 from sfos import agent as _agent
 
-
 dotenv.load_dotenv()
 
 
 def main() -> None:
-    """Main agent startup"""
+    print(f"SFOS Ground Control Agent (version '{_agent.__version__}')")
     try:
         _agent.start_agent()
         return 0

@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -128,7 +128,6 @@ class Connector:
         self._logging_in = True
         self._set_creds(credentials)
         if not self.credentials:
-
             result = SfosResponse(
                 fw=self,
                 error=_ex.LoginError("Credentials not provided"),
@@ -146,7 +145,6 @@ class Connector:
         )
 
         if rsp_auth.error and isinstance(rsp_auth.error, _ex.AgentConnectionError):
-
             result = SfosResponse(
                 fw=self,
                 error=rsp_auth.error,
@@ -172,7 +170,7 @@ class Connector:
             )
             logerror(result)
             return result
-        if rsp_auth.text and _c.AUTH_SUCCESS_MSG not in rsp_auth.text:
+        if rsp_auth.status_code == "200" and _c.AUTH_SUCCESS_MSG not in rsp_auth.text:
             result = SfosResponse(
                 fw=self,
                 request=req_token,

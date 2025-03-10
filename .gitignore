@@ -1,3 +1,8 @@
+__pycache__/
+.venv
+*build/
+*dist/
+logs/
 *.crt
 *.csv
 *.env
@@ -9,10 +14,7 @@
 *.spec
 firewalls.yaml
 firewalls.yml
-__pycache__/
-.venv
 uv.lock
-logs/
 secrets.toml
 /pyproject.toml
 node_modules

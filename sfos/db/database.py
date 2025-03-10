@@ -404,6 +404,7 @@ class Database:
                 loginfo(f"Executing SQL Script '{statement}'")
                 statement = self.load_sql_from_file(statement)
             results.append(self._execute(statement, close, params))
+
         return results
 
     def _execute(
@@ -458,12 +459,7 @@ class Database:
 
             return results
         except sqlite3.OperationalError as e:
-            log(
-                level=Level.ERROR,
-                Error=f"{e}",
-                statement=statement,
-                parameters=params or [],
-            )
+            logdebug(exception=f"{type(e)}:{str(e)}")
 
     def insert_or_update(
         self,

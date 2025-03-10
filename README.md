@@ -225,8 +225,57 @@ gccli.exe -i firewalls.yaml --username gcuser -c refresh
 uv gccli.py -i firewalls.yaml --username gcuser -c refresh
 ```
 
-Launching the web user interface:
 
-```shell
-streamlit run ground_control.py
-```
+## Error Messages
+
+### Firewall authentication errors
+
+- Incorrect username or password
+
+> May be caused by the Username or password being rejected by the firewall, or login attempts being blocked temporarily from previous repeated failures.
+
+- Blocked by disclaimer
+
+> Username and password were accepted, but login requires a user to accept a login disclaimer
+
+- Unable to authenticate
+  
+> 
+
+- Invalid Certificate
+
+> The firewall is using an untrusted certificate. Can be caused by using a self-signed certificate, an expired or revooked certificate, or a certificate whose CA cannot be validated by the app. If this is expected, be sure to set verify_tls to false, or pass the --insecure argument when calling the agent
+
+### Network Connectivity Errors
+
+- Connection timed out
+
+> The firewall did not respond in time to the connection attempt
+
+- DNS Error
+
+> DNS resolution has failed for the firewall's hostname. Can be caused by an invalid hostname entry, or a dns service failure
+
+- Connection error 'additional description'
+
+> A network connection error other than the ones mnetioned above was raised by the host OS, and any additional description from the OS will be provided in the message.
+
+
+### Other Connectivity-Related Errors
+
+Some errors will indicate that the firewall interaction was not fully as expected. This may be due to an application bug, the address pointing to another device that is respnding on the address and port, or from a firewall behavior change after major firewall firmware update. The correct troubleshooting steps in this case is to verify the address and port are correct, the firewall credentials are correct, and that the firewall address and port may be accessed in a browser from the system where the agent is being run.
+
+- Not Authenticated
+- Unexpected auth response
+- Unable to authenticate
+- Unexcpected result - Check ADMIN_LOGIN definition is correct
+- No license data in response
+- Missing keys {missing}\nFound keys:{v_keys}
+
+> A firewall response did not contain all of the expected information.
+
+### Application Errors
+
+- No database
+
+> The application was unable to initialize the database connection. May be caused by a bug or if the application does not have sufficient OS permissions.

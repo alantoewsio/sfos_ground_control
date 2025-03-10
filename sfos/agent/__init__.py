@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -24,7 +24,9 @@ __all__ = [
     "ScriptItem",
     "load_script",
     "execute_script",
+    "__version__",
 ]
+__version__ = "2025.03.130-pre"
 
 from sfos.agent.actions import run_cli_command, run_query
 from sfos.agent.cli_args import init_cli, read_root_args

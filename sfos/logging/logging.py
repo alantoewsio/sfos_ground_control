@@ -59,6 +59,8 @@ FI_FUNCTION = 3
 FI_CODE_CONTEXT = 4
 IF_INDEX = 5
 
+log_level = Level.NONE
+
 
 def caller_name(stacklevel: int = 1) -> str:
     """Get the name of the calling function"""
@@ -68,6 +70,8 @@ def caller_name(stacklevel: int = 1) -> str:
 
 def init_logging(level: Level) -> None:
     """Initialize default logger."""
+    global log_level
+    log_level = level
     # global LOG_PATH, log_file, INIT_CALLED
     if not os.path.exists(LOG_PATH):
         os.makedirs(LOG_PATH)
@@ -239,8 +243,8 @@ def log(
         message = log_msgs
     else:
         message = " ".join([str(msg) for msg in log_msgs]) if log_msgs else ""
-    message = message.replace("\r", "").replace("\n", "\\n")
-    if ret_error:
+    message = message.replace("\r", "").replace("\n", "")
+    if ret_error and level == Level.TRACE:
         logging.exception(ret_error, stacklevel=stacklevel + 1)
     else:
         logging.log(level.value, message, stacklevel=stacklevel + 1)

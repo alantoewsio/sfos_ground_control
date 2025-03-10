@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sfos-ground-control"
-version = "1.0.0"
+version = "1.0.1"
 description = "Sophos Ground Control Firewall Monitoring and Management"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -26,7 +26,7 @@ classifiers= [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
 ]
-dependencies = []
+dependencies = ["sgc-worker"]
 [project.urls]
 "Homepage" = "https://github.com/alantoewsio/sfos_ground_control"
 "Bug Reports" = "https://github.com/alantoewsio/sfos_ground_control/issues"
@@ -34,6 +34,7 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "pip>=25.0",
     "pyinstaller>=6.11.1",
     "pytest==8.0.1",
     "wheel>=0.45.1",
@@ -41,3 +42,6 @@ dev = [
 
 [tool.setuptools]
 packages = ["sfos"]
+
+[tool.uv.sources]
+sgc-worker = { path = "sfos", editable = true }

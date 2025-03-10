@@ -1,0 +1,29 @@
+# UTF-8
+#
+# For more details about fixed file info 'ffi' see:
+# http://msdn.microsoft.com/en-us/library/ms646997.aspx
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    # filevers and prodvers should be always a tuple with four items: (1, 2, 3, 4)
+    # Set not needed items to zero 0.
+    filevers=(2025, 03, 130, 0),
+    prodvers=(2025, 03, 130, 0),
+    ),
+  kids=[
+    StringFileInfo(
+      [
+      StringTable(
+        u'040904b0',
+        [StringStruct(u'CompanyName', u'Sophos Inc.'),
+        StringStruct(u'ProductName', u'SFOS Ground Control Agent'),
+        StringStruct( u'ProductVersion' u'2025, 03, 101, 0'),
+        StringStruct(u'InternalName', u'gccli'),
+        StringStruct(u'OriginalFilename', u'gccli.exe'),
+        StringStruct( u'FileVersion' u'2025, 03, 101, 0'),
+        StringStruct(u'FileDescription', u'SFOS Ground Control Command Line Agent'),
+        StringStruct(u'LegalCopyright', u'Copyright 2025 Sophos, Inc. All rights reserved.'),
+        ])        
+      ]),
+    VarFileInfo([VarStruct(u'Translation', [1033])])
+  ]
+)

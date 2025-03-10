@@ -1,4 +1,4 @@
-"hostname", "port", "username", "password", "verify_tls"
+'hostname', 'port', 'username', 'password', 'verify_tls'
 example-host.network.com,,,, false
 example-host2.network.com,,, secret_value_abc
 example-host3.network.com,, firewalladmin, secret_value_def

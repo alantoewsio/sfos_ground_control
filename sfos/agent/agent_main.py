@@ -59,6 +59,14 @@ def start_agent() -> None:
     firewalls, args, action, rest = read_root_args()  # type: ignore
 
     match action:
+        case "version":
+            loginfo(
+                action="version",
+                args=str(args),
+                rest=str(args),
+                target_count=len(firewalls),
+            )
+            results = "version"
         case "command":
             loginfo(
                 action="command",

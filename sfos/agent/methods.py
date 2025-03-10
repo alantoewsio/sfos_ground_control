@@ -249,7 +249,6 @@ def _read_inv_file(filename: str) -> list | None:
         else:
             print("Inventory file type unrecognized.")
             return None
-
         logdebug(
             f"loaded {file_extension} file '{filename}' and found {len(results)} entries."
         )
@@ -264,15 +263,33 @@ def _read_json_file(filepath: str) -> list[dict]:
         return json.load(fn)
 
 
+def convert_value(value):
+    value = value.strip()
+    if value.lower() == "true":
+        return True
+    elif value.lower() == "false":
+        return False
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
+
 def _read_csv_file(filepath: str) -> list[dict]:
     result = []
+    EMPTY = ""
     with open(filepath, mode="r", newline="", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             # Skip the row if all values are empty (ignoring whitespace)
             if not any(value.strip() for value in row.values()):
                 continue
-            result.append(row)
+            processed_row = {
+                key.strip(): convert_value(value)
+                for key, value in row.items()
+                if value is not EMPTY
+            }
+            result.append(processed_row)
     return result
 
 
@@ -379,6 +396,7 @@ def read_firewall_inventory(args: _args.Namespace, creds: dict) -> list[Connecto
                 _parse_inv(inv_list, args, creds),
                 fw_inventory,
             )
+        print("Load inventory results: ", fw_inventory)
         logdebug("Loaded firewall inventory from yml")
     else:
         # no host was found in inventory

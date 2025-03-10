@@ -1,4 +1,4 @@
-""" SFOS Ground Control
+"""SFOS Ground Control
 Copyright 2024 Sophos Ltd.  All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
 file except in compliance with the License.You may obtain a copy of the License at
@@ -30,6 +30,7 @@ class FirewallInfo(BaseModel):
         _ex.KeyMissingError: _description_
 
     """
+
     csrf_token: str = None
     displayModel: str = None
     displayVersion: str = None
@@ -119,6 +120,7 @@ class FirewallInfo(BaseModel):
 
 class Entitlement:
     """Encapsulates an item within a license parsed form index.jsp during firewall login"""
+
     def __init__(self, data, serial_number: str, bundle: str):
         dsta = data.get("Start Date") or ""
         dexp = data.get("Expiry Date") or ""
@@ -173,6 +175,7 @@ class Entitlement:
 
 class License:
     """Encapsulates license details parsed from index.jso during SFOS login"""
+
     def __init__(self, json_data: str, serial_number: str):
         self.entitlements: list[Entitlement] = []
 
@@ -205,6 +208,7 @@ class License:
 
 class IndexParser:
     """Parse index.jsp contents retrieved during sfos login"""
+
     def __init__(self, csrf_key: str = _p.DEFAULT_CSRF_KEY_NAME) -> None:
         """Accepts:
         csrf_key    (Optional) defaults to the static CSRF key value expected
@@ -333,7 +337,6 @@ class IndexParser:
             self._compile_re_to_find_csrf_key_value()
 
         except _ex.NoMatchFound as e:
-
             raise _ex.NoMatchFound() from e
 
     def _update_and_find_csrf_token_value(
@@ -468,7 +471,6 @@ class IndexParser:
         """
 
         try:
-
             source_text = self._reduce_html_to_interesting_bits(raw_text)
             search_text = raw_text
 
@@ -548,10 +550,10 @@ def span_desc(seconds: float | None) -> str:
     elif seconds < _c.ONEDAY * 2:
         return "Tomorrow"
     elif seconds < (_c.ONEWEEK * 2):
-        return f"{int(seconds/_c.ONEDAY)} days"
+        return f"{int(seconds / _c.ONEDAY)} days"
     elif seconds < _c.ONEYEAR:
-        return f"{int(seconds/_c.ONEWEEK)} weeks"
+        return f"{int(seconds / _c.ONEWEEK)} weeks"
     elif seconds < (_c.ONEYEAR * 2):
         return "Over a year"
     else:
-        return f"{int(seconds/_c.ONEYEAR)} years"
+        return f"{int(seconds / _c.ONEYEAR)} years"

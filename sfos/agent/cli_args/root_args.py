@@ -20,6 +20,9 @@ def setup_root_arguments(parser: _ap) -> _ap:
         parser (_ap): _description_
     """
     parser.add_argument(
+        "-v", "--version", dest="version", action="store_true", default=False
+    )
+    parser.add_argument(
         "-vv", dest="verbose", action="store_true", default=False, help=_args.SUPPRESS
     )
     parser.add_argument(
@@ -88,9 +91,7 @@ def setup_root_arguments(parser: _ap) -> _ap:
         help=help,
     )
 
-    help = (
-        "Use HashiCorp Vault to retrieve credentials. Cannot be used with '--password'"
-    )
+    help = "Use HashiCorp Vault to retrieve credentials. Cannot be used with '--password'"
     passwd.add_argument("--use-vault", action="store_true", default=False, help=help)
 
     actions = parser.add_argument_group("Available actions")

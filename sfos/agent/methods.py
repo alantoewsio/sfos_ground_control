@@ -185,7 +185,8 @@ def read_cred_args(args: _args.Namespace) -> dict:
     env_pass = os.environ.get("FW_PASSWORD", None)
     if args.password:
         logdebug(f"Found password in args: len({len(args.password)})")
-        result["fw_password"] = args.password
+        if args.password:
+            result["fw_password"] = args.password
     elif env_pass:
         logdebug(f"Found password in 'env:FW_PASSWORD': len={len(env_pass)}")
         result["fw_password"] = env_pass
@@ -346,9 +347,15 @@ def _parse_inv(
         if "verify-tls" not in fw:
             fw["verify-tls"] = args.verify_tls
         if "username" not in fw:
-            fw["username"] = creds["fw_username"]
+            if "fw_username" not in creds or not creds["fw_username"]:
+                fw["username"] = "admin"
+            else:
+                fw["username"] = creds["fw_username"]
         if "password" not in fw:
-            fw["password"] = creds["fw_password"]
+            if "fw_password" not in creds or not creds["fw_password"]:
+                fw["password"] = None
+            else:
+                fw["password"] = creds["fw_password"]
 
     return yaml_dict
 
@@ -396,7 +403,6 @@ def read_firewall_inventory(args: _args.Namespace, creds: dict) -> list[Connecto
                 _parse_inv(inv_list, args, creds),
                 fw_inventory,
             )
-        print("Load inventory results: ", fw_inventory)
         logdebug("Loaded firewall inventory from yml")
     else:
         # no host was found in inventory

@@ -19,7 +19,8 @@ import logging
 import os
 from datetime import UTC, datetime
 from logging.handlers import RotatingFileHandler
-from typing import Callable, TypeAlias, TypeVar
+import sys
+from typing import Callable, Literal, TypeAlias, TypeVar
 
 # Disabled unused import error, since importing json_fix activates it.
 # It does not get called explicitly.
@@ -38,17 +39,37 @@ MessageType: TypeAlias = str | list | object | Level
 
 
 @dataclass
-class State:
+class LogState:
     """Global variables."""
 
-    init_called: bool = False
+    logger_application: logging.Logger = None
+    logger_database: logging.Logger = None
+    logger_agent: logging.Logger = None
+    log_level = Level.NONE
     timers: dict = {}
+    FORMATTER = logging.Formatter(_c.LOG_FORMAT, datefmt=_c.LOG_DATE_FORMAT)
+    AGENT_FORMATTER = logging.Formatter(_c.AGENT_LOG_FORMAT, datefmt=_c.LOG_DATE_FORMAT)
+    PATH = "./logs"
+
+    @property
+    def init_application_done(self) -> bool:
+        return self.logger_application is not None
+
+    @property
+    def init_db_done(self) -> bool:
+        return self.logger_agent is not None
+
+    @property
+    def init_agent_done(self) -> bool:
+        return self.logger_database is not None
+
+    @property
+    def ready(self) -> bool:
+        return self.init_agent_done and self.init_application_done and self.init_db_done
 
 
-logstate = State()
+logstate = LogState()
 
-LOG_PATH = "./logs"
-LOG_FILENAME = "application.log"
 
 INIT_CALLED = False
 # FrameInfo tuple value position indexes
@@ -59,34 +80,50 @@ FI_FUNCTION = 3
 FI_CODE_CONTEXT = 4
 IF_INDEX = 5
 
-log_level = Level.NONE
 
-
-def caller_name(stacklevel: int = 1) -> str:
+def caller_name(stacklevel: int = 2) -> str:
     """Get the name of the calling function"""
     stacklevel += 1
     return inspect.stack()[stacklevel][3]
 
 
+def init_logger(
+    name: str, level: Level, logstate: LogState, formatter: logging.Formatter = None
+) -> logging.Logger:
+    log_filename = f"{name.lower()}.log"
+    log_filepath = os.path.join(logstate.PATH, log_filename)
+    logger = logging.getLogger(name)
+    logger.setLevel(level.value)
+    file_handler = RotatingFileHandler(log_filepath, maxBytes=20 * _c.MB, backupCount=5)
+    file_handler.setFormatter(formatter if formatter else logstate.FORMATTER)
+    logger.addHandler(file_handler)
+    return logger
+
+
 def init_logging(level: Level) -> None:
     """Initialize default logger."""
-    global log_level
-    log_level = level
-    # global LOG_PATH, log_file, INIT_CALLED
-    if not os.path.exists(LOG_PATH):
-        os.makedirs(LOG_PATH)
-    log_file = os.path.join(LOG_PATH, LOG_FILENAME)
-    file_handler = RotatingFileHandler(log_file, maxBytes=20 * _c.MB, backupCount=5)
 
+    if logstate.ready and logstate.log_level == level:
+        # nothing to do.
+        return
+    elif logstate.ready:
+        # already initialized, just changing the log level
+        logstate.logger_application.setLevel(level=level.value)
+        logstate.logger_database.setLevel(level=level.value)
+        return
+
+    logstate.log_level = level
     logging.addLevelName(5, "TRACE")
-    logging.basicConfig(
-        level=level.value,
-        format=_c.LOG_FORMAT,
-        datefmt=_c.LOG_DATE_FORMAT,
-        handlers=[file_handler],
+    if not os.path.exists(logstate.PATH):
+        os.makedirs(logstate.PATH)
+
+    # Init application log
+    logstate.logger_application = init_logger("Application", level, logstate)
+    logstate.logger_database = init_logger("Database", level, logstate)
+    logstate.logger_agent = init_logger(
+        "Agent", level, logstate, logstate.AGENT_FORMATTER
     )
-    logging.log(level.value, "Logging Initialized")
-    logstate.init_called = True
+    logstate.logger_application.log(level.value, "Application Logging Initialized")
 
 
 def mimic_paramspec(copy_from: Callable[P, R]) -> None:
@@ -116,7 +153,9 @@ def logtrace(
     Returns:
         None | Exception | object: _description_
     """
-    return log(*messages, level=Level.TRACE, stacklevel=stacklevel + 1, **kwargs)
+    return log_writer(
+        "application", *messages, level=Level.TRACE, stacklevel=stacklevel + 1, **kwargs
+    )
 
 
 def logdebug(
@@ -132,7 +171,9 @@ def logdebug(
     Returns:
         None | Exception | object: _description_
     """
-    return log(*messages, level=Level.DEBUG, stacklevel=stacklevel + 1, **kwargs)
+    return log_writer(
+        "application", *messages, level=Level.DEBUG, stacklevel=stacklevel + 1, **kwargs
+    )
 
 
 def logerror(
@@ -142,7 +183,9 @@ def logerror(
 ) -> None | Exception | object:
     """Write an error log entry"""
 
-    return log(*messages, level=Level.ERROR, stacklevel=stacklevel + 1, **kwargs)
+    return log_writer(
+        "application", *messages, level=Level.ERROR, stacklevel=stacklevel + 1, **kwargs
+    )
 
 
 def loginfo(
@@ -158,7 +201,9 @@ def loginfo(
     Returns:
         None | Exception | object: _description_
     """
-    return log(*messages, level=Level.INFO, stacklevel=stacklevel + 1, **kwargs)
+    return log_writer(
+        "application", *messages, level=Level.INFO, stacklevel=stacklevel + 1, **kwargs
+    )
 
 
 def log(
@@ -176,7 +221,104 @@ def log(
     Returns:
         None | Exception | object: _description_
     """
+    return log_writer(
+        "application", *messages, stacklevel=stacklevel + 1, level=level, **kwargs
+    )
+
+
+def agent_loginfo(
+    *messages: str,
+    stacklevel: int = 1,
+    **kwargs: str | int | list | bool | None,
+):
+    log_writer("agent", *messages, stacklevel=stacklevel + 1, level=Level.INFO, **kwargs)
+
+
+def db_logtrace(
+    *messages: str,
+    stacklevel: int = 1,
+    **kwargs: str | int | list | bool | None,
+):
+    log_writer("database", *messages, stacklevel + 1, Level.TRACE, **kwargs)
+
+
+def db_logdebug(
+    *messages: str,
+    stacklevel: int = 1,
+    **kwargs: str | int | list | bool | None,
+):
+    log_writer("database", *messages, stacklevel + 1, Level.DEBUG, **kwargs)
+
+
+def db_loginfo(
+    *messages: str,
+    stacklevel: int = 1,
+    **kwargs: str | int | list | bool | None,
+):
+    log_writer("database", *messages, stacklevel + 1, Level.INFO, **kwargs)
+
+
+def db_logwarn(
+    *messages: str,
+    stacklevel: int = 1,
+    **kwargs: str | int | list | bool | None,
+):
+    log_writer(
+        "database", *messages, stacklevel=stacklevel + 1, level=Level.WARNING, **kwargs
+    )
+
+
+def db_logerror(
+    *messages: str,
+    stacklevel: int = 1,
+    **kwargs: str | int | list | bool | None,
+):
+    log_writer(
+        "database", *messages, stacklevel=stacklevel + 1, level=Level.ERROR, **kwargs
+    )
+
+
+def db_log(
+    *messages: str,
+    stacklevel: int = 1,
+    level: Level = Level.DEBUG,
+    **kwargs: str | int | list | bool | None,
+):
+    log_writer("database", *messages, stacklevel=stacklevel + 1, level=level, **kwargs)
+
+
+def log_writer(
+    source: Literal["application", "agent", "database"],
+    *messages: MessageType,
+    stacklevel: int = 1,
+    level: Level = Level.DEBUG,
+    **kwargs: str | int | list | bool | None,
+) -> None | Exception | object:
+    """Write a log entry
+
+    Args:
+        level (Level, optional): _description_. Defaults to Level.DEBUG.
+        stacklevel (int, optional): _description_. Defaults to 1.
+
+    Returns:
+        None | Exception | object: _description_
+    """
     msgs = []
+    logger: logging.Logger = None
+    if not logstate.ready:
+        init_logging(level=level)
+    match source:
+        case "agent":
+            logger = logstate.logger_agent
+        case "database":
+            logger = logstate.logger_database
+        case _:
+            logger = logstate.logger_application
+
+    # Early exit if not ready to log
+    if level == Level.NONE or logger is None:
+        print(f"Log called too early from {caller_name(stacklevel + 2)}")
+        return
 
     for itm in messages:
         if isinstance(itm, Level):
@@ -184,8 +326,6 @@ def log(
         else:
             msgs.append(itm)
 
-    if level == Level.NONE or not logstate.init_called:
-        return
     level = Level.DEBUG if level is None else level
     ret_obj = None
     ret_error = None
@@ -244,12 +384,17 @@ def log(
     else:
         message = " ".join([str(msg) for msg in log_msgs]) if log_msgs else ""
     message = message.replace("\r", "").replace("\n", "")
-    if ret_error and level == Level.TRACE:
-        logging.exception(ret_error, stacklevel=stacklevel + 1)
-    else:
-        logging.log(level.value, message, stacklevel=stacklevel + 1)
+    try:
+        if ret_error:  # and level == Level.TRACE:
+            logger.exception(ret_error, stacklevel=stacklevel + 1)
+        else:
+            if message:
+                logger.log(level.value, message, stacklevel=stacklevel + 1)
 
-    return ret_obj if ret_obj else ret_error if ret_error else None
+        return ret_obj if ret_obj else ret_error if ret_error else None
+    except:  # noqa: E722 Exempt linting error
+        # logging errors should not block application success
+        logerror(sys.exc_info()[0])
 
 
 def log_callstart(

@@ -13,7 +13,7 @@ import argparse as _args
 from sfos.agent.script_objs import ScriptItem, execute_script_item
 from sfos.base import GroundControlDB as _db
 from sfos.static import exceptions as _ex
-from sfos.logging.logging import loginfo, logerror
+from sfos.logging.logging import loginfo, logerror, agent_loginfo
 from sfos.webadmin.connector import Connector as _conn, SfosResponse as _sresp
 
 
@@ -66,11 +66,16 @@ def run_command_refresh(fw: _conn, db: _db | None = None) -> _sresp:
         )
 
     msg = f"fetching info from {fw.address.address}.."  # type: ignore
+    agent_loginfo(msg)
+
     loginfo(msg, end="\r")
     sfos_resp = fw.get_info()
     loginfo(" " * len(msg), end="\r")
+    msgdata = db._prep_resp_for_inventory_update(sfos_resp)
+    agent_loginfo(f"refresh check complete for {fw.address.address}", **msgdata)
 
     db.insert_or_update_fwinfo(sfos_resp)
+    agent_loginfo()
     sfos_resp.trace = "101"
     return sfos_resp
 

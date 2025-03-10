@@ -26,7 +26,7 @@ __all__ = [
     "execute_script",
     "__version__",
 ]
-__version__ = "2025.03.130-pre"
+__version__ = "2025.03.136-pre"
 
 from sfos.agent.actions import run_cli_command, run_query
 from sfos.agent.cli_args import init_cli, read_root_args

@@ -12,8 +12,11 @@ License.
 # pylint: disable=broad-exception-caught
 
 import csv
+import os
+from pathlib import Path
 import prettytable
 from datetime import datetime
+from sfos import __version__ as _agent_version
 from sfos.base.db import init_db
 from sfos.agent.cli_args import read_root_args
 from sfos.agent.actions import run_cli_command, run_query, run_scripts
@@ -24,6 +27,7 @@ from sfos.logging import (
     loginfo,
     logerror,
     init_logging,
+    agent_loginfo,
     # log_callstart,
     # log_calldone,
 )
@@ -66,7 +70,8 @@ def start_agent() -> None:
                 rest=str(args),
                 target_count=len(firewalls),
             )
-            results = "version"
+            results = _agent_version
+            agent_loginfo(action="version", results=_agent_version)
         case "command":
             loginfo(
                 action="command",
@@ -80,12 +85,17 @@ def start_agent() -> None:
             ]
             loginfo(action="command", results=command_summary)
             if args.command == "refresh":
-                # query = "SELECT * FROM inventory_view"
                 query = db.load_sql_from_file("dashboard.sql")
                 try:
+                    filepath = Path(os.getenv("GC_OUTPUT_PATH", "./"))
+                    filepath.mkdir(exist_ok=True)
+                    if not filepath.is_dir:
+                        filepath = "./"
+
                     now = datetime.now()
                     now.strftime("%Y%m%d-%H-%M-%S")
                     filename = f"refresh_{now.strftime('%Y%m%d-%H-%M-%S')}.csv"
+                    filename = Path(filepath, filename).resolve()
                     logdebug(f"Refresh done. printing results from query: {query}")
                     write_csv(
                         query,
@@ -105,12 +115,12 @@ def start_agent() -> None:
                     logerror(sr.error)
                     break
 
-            print(
-                (
-                    f"'{args.command}' attempted on {len(results)} firewalls with "
-                    f"{len(failures)} error(s)."
-                )
+            message = (
+                f"'{args.command}' attempted on {len(results)} firewalls with "
+                f"{len(failures)} error(s)."
             )
+            agent_loginfo(message)
+            print(message)
 
             log(
                 Level.INFO,

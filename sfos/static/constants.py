@@ -30,4 +30,5 @@ LOG_FORMAT = (
     '%(asctime)s "%(levelname)s" file="%(filename)s" line="%(lineno)s" '
     'func="%(funcName)s()" message="%(message)s"'
 )
+AGENT_LOG_FORMAT = '%(asctime)s "%(levelname)s" %(message)s'
 LOG_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"

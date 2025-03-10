@@ -22,7 +22,14 @@ from typing import Any
 from sfos.db.query import Select
 from sfos.db.data_formatting import qs, rs
 from sfos.static import exceptions as _ex
-from sfos.logging import Level, log, logtrace, logdebug, logerror, loginfo
+from sfos.logging import (
+    Level,
+    db_log as log,
+    db_logtrace as logtrace,
+    db_logdebug as logdebug,
+    db_logerror as logerror,
+    db_loginfo as loginfo,
+)
 
 
 class DBError(Exception):

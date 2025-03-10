@@ -12,22 +12,39 @@ License.
 import sys
 import dotenv
 
+from sfos import __version__ as _WorkerVersion
 from sfos import agent as _agent
+from sfos.logging import agent_loginfo, logerror
 
 dotenv.load_dotenv()
 
 
+def is_running_as_exe():
+    return getattr(sys, "frozen", False) or "__file__" not in globals()
+
+
 def main() -> None:
-    print(f"SFOS Ground Control Agent (version '{_agent.__version__}')")
+    agent_loginfo(
+        f"SFOS Ground Control Agent ( {'exe' if is_running_as_exe() else 'py'} version '{_agent.__version__}', worker version '{_WorkerVersion}') starting"
+    )
+    message = "SFOS Ground Control Agent exiting"
     try:
         _agent.start_agent()
+        agent_loginfo(message + " successfully")
         return 0
-    except KeyError as e:
-        print(f"Key error: {e}")
-        return 1
     except _agent.methods.AgentMethodsError as e:
-        print(f"Error: {e}")
-        return 2
+        message += f"SFOS Ground Control Agent exiting - error(2): {e}"
+        agent_loginfo(message)
+        print(message)
+        return 1
+    except:  # noqa: E722 Exempt linting error
+        # logging errors should not block application success
+        e = sys.exc_info()[0]
+        message += f" - Unexpected error(999) {e}"
+        logerror(e)
+        agent_loginfo(message)
+        print(message)
+        return 999
 
 
 if __name__ == "__main__":

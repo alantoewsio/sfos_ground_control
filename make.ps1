@@ -193,7 +193,7 @@ if (test-path ".\dist") {
 if (test-path ".\gccli.exe") { remove-Item ".\gccli.exe" }
 
 if (($BuildSfos) -or ($BuildEverything) ) {
-
+    Write-Host "Building SFOS package"
     # make sure dev requirements are installed before running build process
     remove-item pyproject.toml
     copy-item pyproject_init.toml pyproject.toml
@@ -204,6 +204,7 @@ if (($BuildSfos) -or ($BuildEverything) ) {
 }
 
 if ( ($BuildWorker) -or ($BuildEverything) ) {
+    Write-Host "Building Worker.."
     $versionFile = ".\sfos\__init__.py"
     if ( -not $Rebuild ) { IncrementVersion $versionFile }
     # update the dependency and rebuild with the new version
@@ -211,25 +212,30 @@ if ( ($BuildWorker) -or ($BuildEverything) ) {
     & uv build .
 }
 if (($BuildExe) -or ($BuildEverything) ) {
+    
     $versionFile = ".\sfos\agent\__init__.py"
     $iconFile = "./make/gclogo.ico"
     $vsversionFile = ".\make\exe_version.txt"
-    $buildTarget = ".\sfos\dist\gccli.exe"
+    $buildTarget = ".\dist\gccli.exe"
     $current_version = Get-Version($versionFile)
     $newTarget = ".\gccli.$($current_version).exe"
     $finalTarget = ".\gccli.exe"
 
     
     if ( -not $Rebuild ) { 
+        Write-Host "Building EXE.."
         IncrementVersion $versionFile -UseDate -SuffixOverride "-pre" 
         Update-VSVersionInfo $versionFile $vsversionFile
+    } else {
+        Write-Host "Rebuilding EXE.."
     }
     # Create gccli.exe
     & uv run pyinstaller -F gccli.py --icon $iconFile # -version-file=$vsversionFile
     # & uv run pyinstaller -F gccli.py --icon ./make/gclogo.ico -version-file=".\make\exe_version.txt" 
     # Move compiled exe into root folder
     
-    if (test-path $buildTarget) {        
+    if (test-path $buildTarget) {   
+        Write-Host "Build finished. Finalizing EXE package"             
         Move-Item -Path $buildTarget -destination $newTarget
         Copy-Item -Path $newTarget -Destination $finalTarget
         Write-Host "Done. The contents of dist may be copied as a standalone application."

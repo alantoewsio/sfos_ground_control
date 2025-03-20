@@ -24,9 +24,10 @@ def is_running_as_exe():
 
 
 def main() -> None:
-    agent_loginfo(
-        f"SFOS Ground Control Agent ( {'exe' if is_running_as_exe() else 'py'} version '{_agent.__version__}', worker version '{_WorkerVersion}') starting"
-    )
+    exectype = "exe" if is_running_as_exe() else "py"
+    message = f"SFOS Ground Control Agent ( {exectype} version '{_agent.__version__}', worker version '{_WorkerVersion}') starting"
+    agent_loginfo(message)
+    print(message)
     message = "SFOS Ground Control Agent exiting"
     try:
         _agent.start_agent()
@@ -37,14 +38,14 @@ def main() -> None:
         agent_loginfo(message)
         print(message)
         return 1
-    except:  # noqa: E722 Exempt linting error
-        # logging errors should not block application success
-        e = sys.exc_info()[0]
-        message += f" - Unexpected error(999) {e}"
-        logerror(e)
-        agent_loginfo(message)
-        print(message)
-        return 999
+    # except:  # noqa: E722 Exempt linting error
+    #     # logging errors should not block application success
+    #     e = sys.exc_info()[0]
+    #     message += f" - Unexpected error(999) {e}"
+    #     logerror(e)
+    #     agent_loginfo(message)
+    #     print(message)
+    #     return 999
 
 
 if __name__ == "__main__":

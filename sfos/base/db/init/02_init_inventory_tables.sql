@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS inventory (
     added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_seen TIMESTAMP DEFAULT NULL,
+    session_id TEXT DEFAULT NULL,
     CONSTRAINT unique_address_serial_number UNIQUE (address, serial_number) ON CONFLICT REPLACE
 );
 

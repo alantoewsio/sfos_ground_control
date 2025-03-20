@@ -11,7 +11,7 @@ License.
 
 from sfos.base.db import GroundControlDB as _db
 from sfos.base.db import instance
-from sfos.logging.logging import log, Level, logtrace
+from sfos.logging.logging import db_log as log, Level, db_logtrace as logtrace
 
 SQL_INIT_PATH = "./sfos/base/db/init"
 
@@ -23,40 +23,20 @@ def init_db(filename: str | None = None) -> _db:
         filename (str | None, optional): _description_. Defaults to None.
 
     Returns:
-        _db: _description_
+        _db: database instance
     """
+    if instance.db and instance.db.session_id:
+        return instance.db
     logtrace(action="init_db")
     instance.db = None
     if filename:
         instance.db = _db(filename)
     else:
         instance.db = _db()
-        log(Level.INFO, f"Initialized db '{instance.db.filename}'")
+        log(
+            Level.INFO,
+            f"Initialized db file='{instance.db.filename}' session='{instance.db.session_id}'",
+        )
 
-    # # Run database init scripts
-    # logtrace(f"fetching init scripts from  {SQL_INIT_PATH}")
-    # init_scripts = instance.db.list_sql_files(SQL_INIT_PATH)
-    # logtrace(f"found {len(init_scripts)} sql init scripts: {init_scripts}")
-    # init_scripts_sql = [
-    #     instance.db.load_sql_from_file(file, path=SQL_INIT_PATH)
-    #     for file in init_scripts
-    # ]
-
-    # if instance.db.create_db(init_scripts_sql):
-    #     log(
-    #         Level.INFO,
-    #         action="init_db",
-    #         files=init_scripts,
-    #         database=instance.db.filename,
-    #         success=True,
-    #     )
-    # else:
-    #     log(
-    #         Level.WARNING,
-    #         action="init_db",
-    #         files=init_scripts,
-    #         database=instance.db.filename,
-    #         success=False,
-    #     )
     assert instance.db  # GroundControlDB class is instantiated successfully
     return instance.db

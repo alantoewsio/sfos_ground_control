@@ -85,7 +85,8 @@ def start_agent() -> None:
             ]
             loginfo(action="command", results=command_summary)
             if args.command == "refresh":
-                query = db.load_sql_from_file("dashboard.sql")
+                cli_query = db.load_sql_from_file("session_cli_result.sql")
+                csv_query = db.load_sql_from_file("session_csv_result.sql")
                 try:
                     filepath = Path(os.getenv("GC_OUTPUT_PATH", "./"))
                     filepath.mkdir(exist_ok=True)
@@ -96,24 +97,23 @@ def start_agent() -> None:
                     now.strftime("%Y%m%d-%H-%M-%S")
                     filename = f"refresh_{now.strftime('%Y%m%d-%H-%M-%S')}.csv"
                     filename = Path(filepath, filename).resolve()
-                    logdebug(f"Refresh done. printing results from query: {query}")
+                    logdebug(f"Refresh done. Saving results from query: {csv_query}")
                     write_csv(
-                        query,
+                        csv_query,
                         filename=filename,
                     )
-                    print_table(query)
+                    logdebug(f"printing results to cli from query: {cli_query}")
+                    print_table(cli_query)
                     print(f"Results saved to '{filename}'")
 
                 except Exception as e:
                     logerror(e)
                     print(f"Actions complete - error displaying summary. {e}")
 
-            failures = []
-            for sr in results:
-                if not sr.success:
-                    failures.append(sr)
-                    logerror(sr.error)
-                    break
+            # cleanup fail counting and fixed a bug stopping it from counting more than one fail
+            failures = [fail for fail in results if not fail.success]
+            for fail in failures:
+                logerror(fail.error)
 
             message = (
                 f"'{args.command}' attempted on {len(results)} firewalls with "
@@ -158,4 +158,5 @@ def start_agent() -> None:
         case "help":
             # Information only. Help message is displayed by read_root_args()
             log(action="help", args=str(args))
+    return db.session_id
     # log_calldone(verbose=True)

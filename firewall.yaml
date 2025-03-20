@@ -1,2 +1,4 @@
 - hostname: boston.toews.io
   verify_tls: false
+  username: admin
+  password: Sophos=111

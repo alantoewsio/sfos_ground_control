@@ -25,6 +25,7 @@ __all__ = [
     "db_logdebug",
     "db_loginfo",
     "db_logerror",
+    "caller_name",
 ]
 from sfos.logging.logging import (
     log,
@@ -42,4 +43,5 @@ from sfos.logging.logging import (
     db_logdebug,
     db_loginfo,
     db_logerror,
+    caller_name,  # helpful for debugging
 )

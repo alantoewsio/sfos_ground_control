@@ -20,7 +20,7 @@ import os
 from datetime import UTC, datetime
 from logging.handlers import RotatingFileHandler
 import sys
-from typing import Callable, Literal, TypeAlias, TypeVar
+from typing import Literal, TypeAlias, TypeVar
 
 # Disabled unused import error, since importing json_fix activates it.
 # It does not get called explicitly.
@@ -124,20 +124,6 @@ def init_logging(level: Level) -> None:
         "Agent", level, logstate, logstate.AGENT_FORMATTER
     )
     logstate.logger_application.log(level.value, "Application Logging Initialized")
-
-
-def mimic_paramspec(copy_from: Callable[P, R]) -> None:
-    """Decorator to mimic another function's type hints"""
-    if copy_from:
-        pass
-
-    def _decorate(fn: Callable) -> Callable[P, R]:
-        def _wrap(*args, **kwargs):
-            return fn(*args, **kwargs)
-
-        return _wrap  # type: ignore
-
-    return _decorate  # type: ignore
 
 
 def logtrace(

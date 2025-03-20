@@ -30,7 +30,7 @@ from sfos.base import (
 from sfos.base import (
     get_credential as _get_credential,
 )
-from sfos.logging import logdebug, logerror
+from sfos.logging import logdebug, logerror, loginfo
 from sfos.objects import FirewallInfo as _Fwi
 from sfos.objects import ServiceAddress as _Sa
 from sfos.webadmin import Connector
@@ -210,20 +210,20 @@ def _convert_inventory_to_connectors(inventory: list) -> list[Connector]:
     firewalls = []
     for fw in inventory:
         try:
-            if "verify_tls" in fw:
-                verify_tls = fw["verify_tls"]
-            elif "verify-tls" in fw:
-                verify_tls = fw["verify-tls"]
-            else:
-                verify_tls = True
+            # if "verify_tls" in fw:
+            #     verify_tls = fw["verify_tls"]
+            # elif "verify-tls" in fw:
+            #     verify_tls = fw["verify-tls"]
+            # else:
+            #     verify_tls = True
             firewalls.append(
-                Connector(
-                    hostname=fw["hostname"],
-                    port=fw["port"],
-                    verify_tls=verify_tls,
-                    username=fw["username"],
-                    password=fw["password"],
-                )
+                Connector(**fw)
+                #     hostname=fw["hostname"],
+                #     port=fw["port"],
+                #     verify_tls=verify_tls,
+                #     username=fw["username"],
+                #     password=fw["password"],
+                # )
             )
         except Exception as e:
             logerror(f"Error reading inventory record {fw} - {e}")
@@ -301,61 +301,40 @@ def _read_yaml_file(filepath: str) -> list[dict]:
         return yaml.safe_load(fn)
 
 
-def _fill_missing_values_with_defaults(
-    yaml_dict: list,
-    hostname: str = "172.16.16.16",
-    port: int = 4444,
-    verify_tls: bool = True,
-    username: str = None,
-    password: str = None,
-) -> list:
-    for fw in yaml_dict:
-        if "hostname" not in fw:
-            fw["hostname"] = hostname
-        if "port" not in fw:
-            fw["port"] = port
-        if "verify-tls" not in fw:
-            fw["verify-tls"] = verify_tls
-        if "username" not in fw:
-            fw["username"] = username
-        if "password" not in fw:
-            fw["password"] = password
-    return yaml_dict
-
-
 def _parse_inv(
-    yaml_dict: list | None,
+    yaml_dict: list[dict] | None,
     args: _args.Namespace,
     creds: dict,
 ) -> list:
     if yaml_dict is None:
         return []
 
-    # return _fill_missing_values_with_defaults(
-    #     yaml_dict,
-    #     args.hostname,
-    #     args.port,
-    #     args.verift_tls,
-    #     creds["fw_username"],
-    #     creds["fw_password"],
-    # )
+    allowed_keys = ["hostname", "port", "username", "password", "verify_tls", "timeout"]
+
+    # Make sure creds dict contains expected keys
+    creds["fw_username"] = creds.pop("fw_username", "admin")
+    creds["fw_password"] = creds.pop("fw_password", None)
+
     for fw in yaml_dict:
-        if "hostname" not in fw:
-            fw["hostname"] = args.hostname
-        if "port" not in fw:
-            fw["port"] = args.port
-        if "verify-tls" not in fw:
-            fw["verify-tls"] = args.verify_tls
-        if "username" not in fw:
-            if "fw_username" not in creds or not creds["fw_username"]:
-                fw["username"] = "admin"
-            else:
-                fw["username"] = creds["fw_username"]
-        if "password" not in fw:
-            if "fw_password" not in creds or not creds["fw_password"]:
-                fw["password"] = None
-            else:
-                fw["password"] = creds["fw_password"]
+        # Make sure that fw dict contains all required keys
+        fw["hostname"] = fw.pop("hostname", args.hostname)
+        fw["port"] = fw.pop("port", args.port)
+        fw["verify_tls"] = fw.pop(
+            "verify_tls", fw.pop("verify-tls", args.verify_tls or True)
+        )
+        fw["username"] = fw.pop("username", creds["fw_username"])
+        fw["password"] = fw.pop("password", creds["fw_password"])
+        fw["timeout"] = fw.pop("timeout", 2)
+
+        # find any unsupported keys that should be removed
+        remove_keys = [key for key in fw.keys() if key not in allowed_keys]
+
+        # drop and announce all unexpected keys
+        for key in remove_keys:
+            message = f"removing unexpected key '{key}' from {fw['hostname']}"
+            print(message)
+            loginfo(message)
+            fw.pop(key, None)
 
     return yaml_dict
 
@@ -403,12 +382,14 @@ def read_firewall_inventory(args: _args.Namespace, creds: dict) -> list[Connecto
                 _parse_inv(inv_list, args, creds),
                 fw_inventory,
             )
-        logdebug("Loaded firewall inventory from yml")
+        logdebug("Loaded firewall inventory from file")
+    elif args.version:
+        logdebug("Performing agent version check")
     else:
         # no host was found in inventory
         # print("no host found:", args.inventory, args.hostname)
         pass
-    if not fw_inventory:
+    if not fw_inventory and not args.version:
         raise AgentMethodsError("A hostname or firewall inventory file is required")
 
     firewalls = _convert_inventory_to_connectors(fw_inventory)

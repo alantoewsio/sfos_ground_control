@@ -59,10 +59,14 @@ class Connector:
         username: str | None = None,
         password: str | None = None,
         resume_session: dict | None = None,
+        timeout: int = 2,
     ) -> None:
         if hostname:
             self.address = _sa(
-                hostname, port or 4444, verify_tls if verify_tls is not None else True
+                hostname,
+                port or 4444,
+                verify_tls if verify_tls is not None else True,
+                timeout,
             )
         else:
             self.address = address

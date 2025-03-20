@@ -13,14 +13,27 @@ import os
 from datetime import datetime
 import sqlite3
 from pathlib import Path
+import dotenv
+
+from random import choice
+from string import ascii_uppercase
 
 from sfos.objects.firewall_info import FirewallInfo
 from sfos.static import exceptions as _ex
 from sfos.db import Database
 from sfos.webadmin.connector import Connector as _conn, SfosResponse as _sresp
-from sfos.logging import logtrace, logerror, loginfo
+from sfos.logging import (
+    db_logtrace as logtrace,
+    db_logerror as logerror,
+    db_loginfo as loginfo,
+    caller_name,
+)
 
-DEFAULT_SQL_INIT_PATH = "./sfos/base/db/init"
+dotenv.load_dotenv()
+
+# Moved getenv logic to to to make __init__ logic easier to read
+DEFAULT_DATABASE_FILE = os.getenv("GC_DATABASE_FILE", "./ground_control.sqlite3")
+DEFAULT_SQL_INIT_PATH = os.getenv("GC_SQL_INIT_PATH", "./sfos/base/db/init")
 
 
 class GroundControlDB(Database):
@@ -32,19 +45,38 @@ class GroundControlDB(Database):
 
     def __init__(self, filename: str | None = None):
         if not filename:
-            filename = os.getenv("GC_DATABASE_FILE", "./ground_control.sqlite3")
+            filename = DEFAULT_DATABASE_FILE
         loginfo(f"Initializing database file '{filename}'")
         # Run database init scripts
-        SQL_INIT_PATH = os.getenv("GC_SQL_INIT_PATH", DEFAULT_SQL_INIT_PATH)
+        SQL_INIT_PATH = DEFAULT_SQL_INIT_PATH
         logtrace(f"fetching init scripts from  {SQL_INIT_PATH}")
         init_scripts = self.list_sql_files(SQL_INIT_PATH)
         logtrace(f"found {len(init_scripts)} sql init scripts: {init_scripts}")
-        sql_init_scripts = [
-            str(Path(SQL_INIT_PATH, file))
-            for file in init_scripts
-            # self.load_sql_from_file(file, path=SQL_INIT_PATH) for file in init_scripts
-        ]
+        sql_init_scripts = [str(Path(SQL_INIT_PATH, file)) for file in init_scripts]
+        self.session_id = "".join(choice(ascii_uppercase) for i in range(5))
         super().__init__(filename, sql_init_scripts)
+        # Save the current session ID for reference
+        self.save_setting("current_session_id", self.session_id)
+        assert self.get_setting("current_session_id", "NOT FOUND") == self.session_id
+
+    def save_setting(self, key: str, value: str):
+        result = self.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (:key, :value)",
+            params=[key, value],
+        )
+        loginfo(f"save key: {key}='{value}' result={result}")
+
+    def get_setting(self, key: str, value: str, default: str = None) -> str:
+        result = self.execute("SELECT value FROM settings WHERE key=:key", params=[key])
+
+        # Flatten results down to just the first single value
+        while isinstance(result, list) and len(result) > 0:
+            result = result[0]
+            if isinstance(result, tuple):
+                result = list(result)
+
+        loginfo(f"save key: {key}='{value}' result={result}")
+        return result
 
     def _prep_resp_for_inventory_update(self, sresp: _sresp) -> dict:
         """Format a dictionary with the firewall inventory info
@@ -77,6 +109,7 @@ class GroundControlDB(Database):
             "reply_ms": sresp.timer if success else None,
             "updated": datetime.now().isoformat(),
             "last_seen": datetime.now().isoformat() if success else None,
+            "session_id": self.session_id,
         }
         return data
 

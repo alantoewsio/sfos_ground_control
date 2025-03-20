@@ -99,6 +99,7 @@ Define only the hostname and any fields to be defined per host. Fields may be in
   verify_tls: false
   username: firewalluser
   password: secret_value_xyz
+  timeout: 5
 
 ```
 
@@ -131,7 +132,8 @@ fields and firewall records must each be separated with a comma.
     "port": 4444,
     "verify_tls": false,
     "username": "firewalluser",
-    "password": "secret_value_xyz"
+    "password": "secret_value_xyz",
+    "timeout": 5
   }
 ]
 ```
@@ -149,11 +151,11 @@ Columns defined in the header do not need to be included in each row, if no foll
 #### CSV file with all fields defined
 
 ```csv
-"hostname", "port", "username", "password", "verify_tls"
+"hostname", "port", "username", "password", "verify_tls", timeout
 example-host.network.com
 example-host2.network.com,,, secret_value_abc, false
 example-host3.network.com,, firewalladmin, secret_value_def
-example-host4.network.com, 4444, firewalluser, secret_value_xyz, false
+example-host4.network.com, 4444, firewalluser, secret_value_xy, false, 5
 ```
 
 #### CSV file with fewer columns

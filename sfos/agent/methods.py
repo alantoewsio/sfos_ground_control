@@ -16,7 +16,7 @@ from __future__ import annotations
 import argparse as _args
 import csv
 import json
-import os
+from os import environ as env
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -34,6 +34,8 @@ from sfos.logging import logdebug, logerror, loginfo
 from sfos.objects import FirewallInfo as _Fwi
 from sfos.objects import ServiceAddress as _Sa
 from sfos.webadmin import Connector
+
+GC_DEFAULT_TIMEOUT = 2
 
 
 class AgentMethodsError(Exception):
@@ -172,7 +174,7 @@ def read_cred_args(args: _args.Namespace) -> dict:
         dict: _description_
     """
     result = {}
-    env_user = os.environ.get("FW_USERNAME", None)
+    env_user = env.get("FW_USERNAME", None)
     if args.username:
         logdebug("Found username in args:", args.username)
         result["fw_username"] = args.username
@@ -182,7 +184,7 @@ def read_cred_args(args: _args.Namespace) -> dict:
     else:
         logdebug("Using default username choice: admin")
 
-    env_pass = os.environ.get("FW_PASSWORD", None)
+    env_pass = env.get("FW_PASSWORD", None)
     if args.password:
         logdebug(f"Found password in args: len({len(args.password)})")
         if args.password:
@@ -192,13 +194,13 @@ def read_cred_args(args: _args.Namespace) -> dict:
         result["fw_password"] = env_pass
     elif args.use_vault:
         vault_pass = _get_credential(
-            mount_point=os.environ["VAULT_MOUNT_POINT"],
-            secret_path=os.environ["VAULT_SECRET_PATH"],
-            key=os.environ["VAULT_SECRET_KEY"],
+            mount_point=env.get("VAULT_MOUNT_POINT"),
+            secret_path=env.get("VAULT_SECRET_PATH"),
+            key=env.get("VAULT_SECRET_KEY"),
         )
         if vault_pass:
             logdebug(
-                f"Found password in vault path {os.environ['VAULT_SECRET_PATH']}: "
+                f"Found password in vault path {env.get('VAULT_SECRET_PATH')}: "
                 f"len={len(vault_pass)}"
             )
             result["fw_password"] = vault_pass
@@ -276,6 +278,15 @@ def convert_value(value):
         return value
 
 
+def get_int(variable: str, default: int = 0) -> int:
+    try:
+        value = env.get(variable, default)
+        return int(value)
+
+    except ValueError:
+        return default
+
+
 def _read_csv_file(filepath: str) -> list[dict]:
     result = []
     EMPTY = ""
@@ -315,6 +326,8 @@ def _parse_inv(
     creds["fw_username"] = creds.pop("fw_username", "admin")
     creds["fw_password"] = creds.pop("fw_password", None)
 
+    default_timeout = get_int("GC_DEFAULT_TIMEOUT", GC_DEFAULT_TIMEOUT)
+
     for fw in yaml_dict:
         # Make sure that fw dict contains all required keys
         fw["hostname"] = fw.pop("hostname", args.hostname)
@@ -324,7 +337,7 @@ def _parse_inv(
         )
         fw["username"] = fw.pop("username", creds["fw_username"])
         fw["password"] = fw.pop("password", creds["fw_password"])
-        fw["timeout"] = fw.pop("timeout", 2)
+        fw["timeout"] = fw.pop("timeout", default_timeout)
 
         # find any unsupported keys that should be removed
         remove_keys = [key for key in fw.keys() if key not in allowed_keys]

@@ -348,6 +348,9 @@ class Connector:
         except _req_ex.ConnectTimeout:
             error = (246, _ex.ConnectionTimeoutError("Connection timed out"))
 
+        except _req_ex.ReadTimeout:
+            error = (248, _ex.ReadTimeoutError("Connection read timed out"))
+
         except _req_ex.ConnectionError as e:
             ex = (
                 _ex.NameResolutionError("DNS Error")

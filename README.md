@@ -65,6 +65,7 @@ Default credentials and settings may be stored in environment variables, or in a
 | `VAULT_SECRET_KEY`  | Hashicorp secure store info          |                          |
 | `GC_DATABASE_FILE`  | Filename used for storing event data | ./ground_control.sqlite3 |
 | `GC_OUTPUT_PATH` | Folder where csv output files will be written. | defaults to the current folder | 
+| `GC_DEFAULT_TIMEOUT` | Default timeout value in seconds for all connections | 10 |
 
 #### Supported Base Command Line Arguments
 

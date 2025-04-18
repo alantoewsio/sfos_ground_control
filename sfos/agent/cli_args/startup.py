@@ -174,7 +174,7 @@ def read_root_args(
         action_args = []
 
     # Select the correct argument parser for the users desired action
-    parser = p_dict[action]
+    parser = p_dict[action] if action in p_dict else None
 
     # Parse the given arguments and return:
     # firewalls, action arguments, action name,

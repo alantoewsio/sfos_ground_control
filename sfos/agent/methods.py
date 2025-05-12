@@ -35,7 +35,7 @@ from sfos.objects import FirewallInfo as _Fwi
 from sfos.objects import ServiceAddress as _Sa
 from sfos.webadmin import Connector
 
-GC_DEFAULT_TIMEOUT = 2
+GC_DEFAULT_TIMEOUT = 10
 
 
 class AgentMethodsError(Exception):

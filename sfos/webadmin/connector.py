@@ -174,7 +174,7 @@ class Connector:
             )
             logerror(result)
             return result
-        if rsp_auth.status_code == "200" and _c.AUTH_SUCCESS_MSG not in rsp_auth.text:
+        if rsp_auth.status_code == 200 and _c.AUTH_SUCCESS_MSG not in rsp_auth.text:
             result = SfosResponse(
                 fw=self,
                 request=req_token,
@@ -185,10 +185,51 @@ class Connector:
             logerror(result)
             return result
 
+        if rsp_token.error:
+            result = SfosResponse(
+                fw=self,
+                request=req_token,
+                response=rsp_token.response,
+                error=rsp_token.error,
+                trace="209",
+            )
+            logerror(result)
+            return result
+
+        if not rsp_token.success:
+            status = rsp_token.status_code or "unknown"
+            result = SfosResponse(
+                fw=self,
+                request=req_token,
+                response=rsp_token.response,
+                error=_ex.LoginError(
+                    f"Unable to retrieve firewall session page: HTTP {status}"
+                ),
+                trace="210",
+            )
+            logerror(result)
+            return result
+
+        if not rsp_token.text:
+            status = rsp_token.status_code or "unknown"
+            result = SfosResponse(
+                fw=self,
+                request=req_token,
+                response=rsp_token.response,
+                error=_ex.LoginError(
+                    f"Firewall session page returned an empty response: HTTP {status}"
+                ),
+                trace="211",
+            )
+            logerror(result)
+            return result
+
         try:
-            assert rsp_token.text
             fwinfo = _parse_index(rsp_token.text)
-            assert fwinfo.csrf_token is not None
+            if fwinfo.csrf_token is None:
+                raise _ex.CSRFTokenError(
+                    "Firewall session page did not contain a CSRF token"
+                )
             hostname = self.address.hostname if self.address else "?"
             logtrace(
                 host=hostname,

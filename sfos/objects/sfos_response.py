@@ -39,7 +39,9 @@ class SfosResponse:
         self.response = response
         self.error = error
         self.data = data
-        self.status_code = response.status_code if response else None
+        # requests.Response is falsey for HTTP error responses (4xx/5xx).
+        # A response still exists in that case and its status/body must be retained.
+        self.status_code = response.status_code if response is not None else None
         self.timestamp = str(datetime.now(tz=UTC))
         self.text = None
         self.success = None
@@ -48,11 +50,16 @@ class SfosResponse:
         if self.error:
             self.success = success if success else False
             self.text = str(error)
-            self.response = getattr(self.error, "response", None)
+            error_response = getattr(self.error, "response", None)
+            if error_response is not None:
+                self.response = error_response
+                self.status_code = error_response.status_code
 
-        elif self.response:
+        elif self.response is not None:
             self.success = (
-                success if success else self.response.status_code in range(200, 300)
+                success
+                if success is not None
+                else self.response.status_code in range(200, 300)
             )
             self.text = getattr(response, "text", "")
             if data:
@@ -82,7 +89,9 @@ class SfosResponse:
             "timer": self.timer,
             "text": self.text,
             "data": data,
-            "web_response": resp2dict(self.response) if self.response else None,
+            "web_response": (
+                resp2dict(self.response) if self.response is not None else None
+            ),
         }
 
     def __json__(self) -> dict:
@@ -98,7 +107,7 @@ class SfosResponse:
         if self.request:
             r: _Request = self.request
             result += f" method:'{r.method}' url:'{r.url}'"
-        if self.response:
+        if self.response is not None:
             r: _response = self.response
             result += f" status:'{r.status_code}' response_url:'{r.url}'"
         if self.text:
